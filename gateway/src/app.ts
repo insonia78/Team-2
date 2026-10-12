@@ -1,0 +1,63 @@
+import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
+import Fastify, { type FastifyInstance } from "fastify";
+import { ZodError } from "zod";
+
+import { env } from "./config/env.js";
+import { accessControlPlugin } from "./plugins/access-control-plugin.js";
+import { adminRoutes } from "./routes/admin.js";
+import { exportRoutes } from "./routes/exports.js";
+import { hackathonRoutes } from "./routes/hackathons.js";
+import { healthRoutes } from "./routes/health.js";
+import { organizerFollowupRoutes } from "./routes/organizer-followups.js";
+import { proxyRoutes } from "./routes/proxy.js";
+
+export async function buildApp(): Promise<FastifyInstance> {
+  const app = Fastify({
+    logger: {
+      level: env.LOG_LEVEL,
+    },
+    requestIdHeader: "x-request-id",
+    genReqId: (request) =>
+      (request.headers["x-request-id"] as string | undefined) ?? crypto.randomUUID(),
+  });
+
+  app.addHook("onResponse", async (request, reply) => {
+    request.log.info(
+      {
+        requestId: request.id,
+        method: request.method,
+        path: request.url,
+        statusCode: reply.statusCode,
+        service: env.SERVICE_NAME,
+      },
+      "request completed",
+    );
+  });
+
+  await app.register(cors, { origin: true });
+  await app.register(rateLimit, {
+    max: env.RATE_LIMIT_MAX,
+    timeWindow: env.RATE_LIMIT_WINDOW_MS,
+  });
+  await app.register(accessControlPlugin);
+  await app.register(healthRoutes);
+  await app.register(adminRoutes);
+  await app.register(hackathonRoutes);
+  await app.register(organizerFollowupRoutes);
+  await app.register(exportRoutes);
+  await app.register(proxyRoutes);
+
+  app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof ZodError) {
+      return reply.code(400).send({
+        error: "Validation failed.",
+        details: error.flatten(),
+      });
+    }
+
+    reply.code(500).send({ error: "Internal server error." });
+  });
+
+  return app;
+}
