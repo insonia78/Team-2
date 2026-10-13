@@ -4,7 +4,9 @@
   "description": "Express scraper for Devpost hackathons",
   "main": "index.js",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "start": "tsx index.ts",
+    "start:prod": "node dist/index.js",
     "dev": "tsx watch index.ts",
     "typecheck": "tsc --noEmit"
   },

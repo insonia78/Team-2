@@ -7,8 +7,8 @@ export type StoredHackathon = ScrapedHackathon & {
   updatedAt: string;
 };
 
-const DATABASE_NAME = 'hackathon-opportunity-research';
-const HACKATHONS_COLLECTION = 'hackathons';
+const DATABASE_NAME = process.env.MONGODB_DATABASE_NAME?.trim() || 'hackathon-opportunity-research';
+const HACKATHONS_COLLECTION = process.env.MONGODB_COLLECTION_NAME?.trim() || 'hackathons';
 
 let client: MongoClient | null = null;
 

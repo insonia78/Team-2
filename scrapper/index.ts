@@ -194,10 +194,17 @@ app.get('/', (_request, response) => {
   response.json({
     message: 'Devpost hackathon scraper is running.',
     endpoints: {
+      health: '/health',
       scrape: '/hackathons',
       scrapeAndPersist: '/hackathons?persist=true&page=1',
       cache: '/hackathons/cache',
     },
+  });
+});
+
+app.get('/health', (_request, response) => {
+  response.json({
+    status: 'ok',
   });
 });
 
