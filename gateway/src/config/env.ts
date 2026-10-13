@@ -20,10 +20,10 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   SERVICE_NAME: z.string().default("team-2-gateway"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
-  LOG_FILE_PATH: z.string().optional(),
 
-  SUPABASE_URL: z.string().url(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  HACKATHON_SERVICE_URL: z.string().url().default("http://127.0.0.1:4001"),
+  AI_SERVICE_URL: z.string().url().optional(),
+  SCRAPER_SERVICE_URL: z.string().url().optional(),
 
   ADMIN_API_KEY: z.string().optional(),
 
@@ -31,7 +31,6 @@ const envSchema = z.object({
   IP_BLOCKLIST: csvList,
   PATH_BLOCKLIST: csvList,
 
-  PROXY_REST_UPSTREAM_URL: z.string().url().optional(),
   PROXY_GRAPHQL_UPSTREAM_URL: z.string().url().optional(),
 
   RATE_LIMIT_MAX: z.coerce.number().default(300),

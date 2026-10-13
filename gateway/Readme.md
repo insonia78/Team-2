@@ -1,27 +1,36 @@
-# Gateway
+# API Gateway
 
-Central API for Codyza hackathon research and optional proxy to future services.
+Central entry point for Team-2. **Does not contain business logic** — it routes traffic to microservices.
 
-## Scripts
+## Responsibilities
 
-| Command | Purpose |
-|---------|---------|
-| `npm run dev` | Local development |
-| `npm run build` | Compile TypeScript |
-| `npm start` | Run production build |
-| `npm run typecheck` | Type check |
-| `npm test` | Unit tests |
+- Request logging (central-ready JSON)
+- Rate limiting
+- IP/path allow & block lists
+- Admin access-control APIs
+- Reverse proxy to:
+  - `hackathon-service` — `/api/hackathons`, `/api/exports`, `/api/organizer-followups`
+  - `ai-service` (future) — `/api/ai`
+  - `scraper-service` (future) — `/api/scraper`
+  - GraphQL — `/proxy/graphql`
+- Health aggregation (`/health/ready` checks downstream services)
 
-## Features
+## Run locally
 
-- Hackathon CRUD + Codyza verification rules
-- Views: Apply Now, shortlist, deadlines, virtual/hybrid, travel-supported, monitor
-- Organizer follow-up log
-- CSV exports for submission packages
-- Access control (IP/path allow & block lists)
-- Admin APIs for runtime blocks
-- REST/GraphQL proxy routes (configurable upstream)
-- Health checks for load balancers
-- Docker image
+Start **hackathon-service first**, then gateway:
 
-See `../docs/API.md` and `../docs/DEPLOYMENT.md`.
+```bash
+# Terminal 1
+cd ../services/hackathon-service
+cp .env.example .env
+npm install && npm run dev
+
+# Terminal 2
+cd ../../gateway
+# gateway/.env needs HACKATHON_SERVICE_URL=http://127.0.0.1:4001
+npm install && npm run dev
+```
+
+Clients call **http://localhost:4000** only.
+
+Inspect routes: `GET http://localhost:4000/gateway/routes`

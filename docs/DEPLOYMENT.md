@@ -2,12 +2,7 @@
 
 ## Local (development)
 
-```bash
-cd gateway
-cp ../.env.example .env
-npm install
-npm run dev
-```
+See [LOCAL-RUN.md](./LOCAL-RUN.md): start `services/hackathon-service` (4001) then `gateway` (4000).
 
 ## Docker (single instance)
 
@@ -20,17 +15,17 @@ docker compose up --build
 1. Build image from `gateway/Dockerfile`.
 2. Run **2+ replicas** behind a load balancer (Railway, Render, AWS ALB, etc.).
 3. Configure LB health check: `GET /health/ready`.
-4. All instances use the same Supabase credentials.
-5. Set `ADMIN_API_KEY`, rate limits, and optional `IP_ALLOWLIST`.
+4. Gateway replicas share the same downstream URLs (`HACKATHON_SERVICE_URL`, etc.).
+5. Hackathon-service replicas share the same `DATABASE_URL` (PostgreSQL).
+6. Set `ADMIN_API_KEY`, rate limits, and optional `IP_ALLOWLIST`.
 
 ## Environment variables
 
-See root `.env.example` (local) and `.env.production.example` (production template).
+See root `.env.example`, `gateway/.env.example` (if present), `services/hackathon-service/.env.example`, and `.env.production.example`.
 
-Required:
+**Gateway:** `HACKATHON_SERVICE_URL`, `PORT`, `ADMIN_API_KEY` (no database credentials).
 
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+**Hackathon service:** `DATABASE_URL`, `DATABASE_SSL` (standard PostgreSQL; Supabase is optional hosting only).
 
 Never commit `.env` or paste production secrets into GitHub. Use the hosting provider **Environment Variables** / **Secrets** UI.
 

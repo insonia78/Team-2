@@ -4,13 +4,15 @@ on:
   push:
     paths:
       - "gateway/**"
+      - "services/hackathon-service/**"
       - ".github/workflows/gateway-ci.yml"
   pull_request:
     paths:
       - "gateway/**"
+      - "services/hackathon-service/**"
 
 jobs:
-  verify:
+  gateway:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -20,8 +22,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: npm
-          cache-dependency-path: gateway/package-lock.json
+      - run: npm install
+      - run: npm run typecheck
+
+  hackathon-service:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/hackathon-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - run: npm install
       - run: npm run typecheck
       - run: npm test

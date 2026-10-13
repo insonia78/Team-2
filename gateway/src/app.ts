@@ -6,11 +6,10 @@ import { ZodError } from "zod";
 import { env } from "./config/env.js";
 import { accessControlPlugin } from "./plugins/access-control-plugin.js";
 import { adminRoutes } from "./routes/admin.js";
-import { exportRoutes } from "./routes/exports.js";
-import { hackathonRoutes } from "./routes/hackathons.js";
+import { gatewayInfoRoutes } from "./routes/gateway-info.js";
 import { healthRoutes } from "./routes/health.js";
-import { organizerFollowupRoutes } from "./routes/organizer-followups.js";
 import { proxyRoutes } from "./routes/proxy.js";
+import { serviceProxyRoutes } from "./routes/service-proxy.js";
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -22,6 +21,10 @@ export async function buildApp(): Promise<FastifyInstance> {
       (request.headers["x-request-id"] as string | undefined) ?? crypto.randomUUID(),
   });
 
+  app.addHook("onRequest", async (request) => {
+    request.headers["x-gateway-service"] = env.SERVICE_NAME;
+  });
+
   app.addHook("onResponse", async (request, reply) => {
     request.log.info(
       {
@@ -30,8 +33,9 @@ export async function buildApp(): Promise<FastifyInstance> {
         path: request.url,
         statusCode: reply.statusCode,
         service: env.SERVICE_NAME,
+        role: "api-gateway",
       },
-      "request completed",
+      "gateway request completed",
     );
   });
 
@@ -42,10 +46,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
   await app.register(accessControlPlugin);
   await app.register(healthRoutes);
+  await app.register(gatewayInfoRoutes);
   await app.register(adminRoutes);
-  await app.register(hackathonRoutes);
-  await app.register(organizerFollowupRoutes);
-  await app.register(exportRoutes);
+  await app.register(serviceProxyRoutes);
   await app.register(proxyRoutes);
 
   app.setErrorHandler((error, _request, reply) => {

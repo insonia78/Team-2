@@ -1,48 +1,46 @@
 # Team-2 Architecture
 
-## Purpose
-
-Support **Codyza Team 02 Task 01** (hackathon opportunity research) with a reliable API and database. The gateway is the single entry point for the frontend and internal tools.
-
-## Components
-
-| Component | Role |
-|-----------|------|
-| `client/` | Next.js UI (forms, filters, submission views) |
-| `gateway/` | Backend API, validation, exports, access control, optional proxy |
-| Supabase PostgreSQL | Master database, organizer follow-up log |
-
-## Request flow
+## Pattern: API Gateway + microservices
 
 ```
-Browser / tools
-    -> gateway (Fastify)
-        -> Supabase (hackathons, organizer_followups)
-    optional: /proxy/rest/* and /proxy/graphql -> future services
+                    +------------------+
+  Client / Next.js  |   API Gateway    |  :4000
+                    |  logging, ACL,   |
+                    |  rate limit,     |
+                    |  route proxy     |
+                    +--------+---------+
+                             |
+         +-------------------+-------------------+
+         |                   |                   |
+         v                   v                   v
+ +---------------+   +---------------+   +---------------+
+ | hackathon-    |   | ai-service    |   | scraper-      |
+ | service :4001 |   | (future)      |   | service       |
+ +-------+-------+   +---------------+   +---------------+
+         |
+         v
+   Supabase PostgreSQL
 ```
 
-## Codyza research rules (enforced in API)
+## Gateway (`gateway/`)
 
-- Verified statuses require evidence links, verifier name, and confidence not Low.
-- Verifier must differ from researcher.
-- Shortlist requires `shortlist_rationale`.
-- Duplicate official websites are rejected.
-- Organizer follow-ups cannot store `confirmed_answer` while status is Pending.
+- Single public URL for the team
+- Proxies paths to internal services
+- No Supabase credentials in gateway
 
-## Redundancy and operations
+## Hackathon service (`services/hackathon-service/`)
 
-- `GET /health/live` — process is running (for load balancers).
-- `GET /health/ready` — database reachable (for load balancers).
-- Graceful shutdown on SIGTERM/SIGINT (Docker/Kubernetes friendly).
-- Run multiple gateway containers behind a load balancer; all share one Supabase database.
+- Codyza master database CRUD, views, CSV exports, organizer follow-ups
+- **Drizzle ORM + `DATABASE_URL`** (standard PostgreSQL — not coupled to Supabase SDK)
+- Supabase can remain the host; migration to RDS/local Postgres is a connection-string change
 
-## Logging
+## Codyza research rules
 
-- Structured JSON logs via Fastify/Pino to stdout.
-- Each request logs `requestId`, method, path, status (ready for centralized log tools).
+Enforced in **hackathon-service** (see `docs/RESEARCH-SOP.md`).
 
-## Security notes
+## Adding a new service
 
-- Never expose `SUPABASE_SERVICE_ROLE_KEY` to the browser.
-- Use `ADMIN_API_KEY` only on server-side admin routes.
-- Configure IP allow/block lists via environment variables for restricted deployments.
+1. Create `services/<name>/` with its own port and `.env`.
+2. Add `*_SERVICE_URL` to gateway env.
+3. Register proxy prefix in `gateway/src/routes/service-proxy.ts`.
+4. Document in `GET /gateway/routes`.

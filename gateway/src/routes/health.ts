@@ -1,12 +1,25 @@
 import type { FastifyPluginAsync } from "fastify";
 
 import { env } from "../config/env.js";
-import { supabase } from "../lib/supabase.js";
+
+async function checkDownstream(url: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${url.replace(/\/$/, "")}/health/ready`);
+    if (!response.ok) {
+      return false;
+    }
+    const body = (await response.json()) as { ok?: boolean };
+    return body.ok === true;
+  } catch {
+    return false;
+  }
+}
 
 export const healthRoutes: FastifyPluginAsync = async (app) => {
   app.get("/health", async () => ({
     ok: true,
     service: env.SERVICE_NAME,
+    role: "api-gateway",
     timestamp: new Date().toISOString(),
   }));
 
@@ -14,16 +27,21 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
     ok: true,
     check: "liveness",
     service: env.SERVICE_NAME,
+    role: "api-gateway",
   }));
 
   app.get("/health/ready", async (_request, reply) => {
-    const { error } = await supabase.from("hackathons").select("id").limit(1);
-    if (error) {
+    const hackathonOk = await checkDownstream(env.HACKATHON_SERVICE_URL);
+
+    if (!hackathonOk) {
       return reply.code(503).send({
         ok: false,
         check: "readiness",
         service: env.SERVICE_NAME,
-        database: "unavailable",
+        role: "api-gateway",
+        downstream: {
+          hackathon_service: "unavailable",
+        },
       });
     }
 
@@ -31,7 +49,10 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
       ok: true,
       check: "readiness",
       service: env.SERVICE_NAME,
-      database: "ok",
+      role: "api-gateway",
+      downstream: {
+        hackathon_service: "ok",
+      },
     };
   });
 };

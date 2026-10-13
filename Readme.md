@@ -7,7 +7,8 @@ Codyza **Team 02 Task 01**: verified hackathon research platform (database + API
 | Path | Purpose |
 |------|---------|
 | `client/` | Next.js frontend |
-| `gateway/` | Backend API (Fastify + Supabase) |
+| `gateway/` | API Gateway — routes traffic to services |
+| `services/hackathon-service/` | Hackathon research API (Drizzle + PostgreSQL) |
 | `supabase/migrations/` | PostgreSQL schema |
 | `docs/` | Architecture, API, task progress, research SOP |
 
@@ -16,16 +17,10 @@ Codyza **Team 02 Task 01**: verified hackathon research platform (database + API
 1. Create Supabase project and run migrations in order:
    - `supabase/migrations/20261009120000_hackathons.sql`
    - `supabase/migrations/20261012120000_organizer_followups.sql`
-2. Configure env: copy `.env.example` → `gateway/.env`
-3. Start API:
+2. Configure env (see [LOCAL-RUN.md](docs/LOCAL-RUN.md)): `services/hackathon-service/.env` + `gateway/.env`
+3. Start **hackathon-service** then **gateway** (or `npm run dev:hackathon` / `dev:gateway` from repo root).
 
-```bash
-cd gateway
-npm install
-npm run dev
-```
-
-4. Verify: `GET http://localhost:4000/health/ready`
+4. Verify: `GET http://localhost:4000/health/ready` and `GET http://localhost:4000/gateway/routes`
 
 ## Documentation index
 
