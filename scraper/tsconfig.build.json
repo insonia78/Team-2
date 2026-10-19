@@ -6,8 +6,6 @@
     "rootDir": "."
   },
   "include": [
-    "index.ts",
-    "mongodb.ts",
-    "models/**/*.ts"
+    "**/*.ts"
   ]
 }

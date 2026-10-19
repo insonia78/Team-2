@@ -13,6 +13,17 @@ export type DevpostPrizeCounts = {
   other: number;
 };
 
+export type DevpostApiMeta = Record<string, unknown> & {
+  total_count?: number;
+  per_page?: number;
+  page?: number;
+  current_page?: number;
+  total_pages?: number;
+  next_page?: number | null;
+  prev_page?: number | null;
+  fuzzy?: boolean;
+};
+
 export type DevpostHackathon = {
   id: number;
   title: string;
@@ -37,6 +48,7 @@ export type DevpostHackathon = {
 
 export type DevpostApiResponse = {
   hackathons: DevpostHackathon[];
+  meta?: DevpostApiMeta;
 };
 
 export type ScrapedHackathon = {
