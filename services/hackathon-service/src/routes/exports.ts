@@ -7,7 +7,7 @@ import { hackathons, organizerFollowups } from "../db/schema.js";
 import { toCsv } from "../lib/csv.js";
 
 export const exportRoutes: FastifyPluginAsync = async (app) => {
-  app.get("/api/exports/master-database.csv", async (_request, reply) => {
+  app.get("/api/exports/master-database.csv", async (request, reply) => {
     try {
       const rows = await db.select().from(hackathons).orderBy(asc(hackathons.eventName));
       const data = rows.map(hackathonToApi);
@@ -15,12 +15,13 @@ export const exportRoutes: FastifyPluginAsync = async (app) => {
       reply.header("Content-Type", "text/csv; charset=utf-8");
       reply.header("Content-Disposition", 'attachment; filename="master-hackathon-database.csv"');
       return toCsv(data);
-    } catch {
+    } catch (error) {
+      request.log.error({ err: error, requestId: request.id }, "failed to export master database");
       return reply.code(500).send({ error: "Failed to export master database." });
     }
   });
 
-  app.get("/api/exports/shortlist.csv", async (_request, reply) => {
+  app.get("/api/exports/shortlist.csv", async (request, reply) => {
     try {
       const rows = await db
         .select()
@@ -32,12 +33,13 @@ export const exportRoutes: FastifyPluginAsync = async (app) => {
       reply.header("Content-Type", "text/csv; charset=utf-8");
       reply.header("Content-Disposition", 'attachment; filename="codyza-shortlist.csv"');
       return toCsv(data);
-    } catch {
+    } catch (error) {
+      request.log.error({ err: error, requestId: request.id }, "failed to export shortlist");
       return reply.code(500).send({ error: "Failed to export shortlist." });
     }
   });
 
-  app.get("/api/exports/organizer-followups.csv", async (_request, reply) => {
+  app.get("/api/exports/organizer-followups.csv", async (request, reply) => {
     try {
       const rows = await db.select().from(organizerFollowups).orderBy(asc(organizerFollowups.sentDate));
       const data = rows.map(followupToApi);
@@ -48,7 +50,8 @@ export const exportRoutes: FastifyPluginAsync = async (app) => {
         'attachment; filename="organizer-followup-log.csv"',
       );
       return toCsv(data);
-    } catch {
+    } catch (error) {
+      request.log.error({ err: error, requestId: request.id }, "failed to export organizer follow-ups");
       return reply.code(500).send({ error: "Failed to export organizer follow-ups." });
     }
   });

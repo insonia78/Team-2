@@ -82,3 +82,11 @@ Do **not** run `npm run dev` from `Team-2` alone until `package.json` exists at 
 curl http://localhost:4000/health/ready
 curl http://localhost:4000/api/hackathons
 ```
+
+## 7. Logs
+
+With `npm run dev`, the terminal prints a readable line for each request. The same record is appended as JSON to `logs/gateway.log` and `logs/hackathon-service.log` when `LOG_FILE_PATH` is set. Startup prints `logging to stdout and file` when the file is in use.
+
+Apply the latest SQL migration in the Supabase SQL editor before relying on the new table rules:
+
+`supabase/migrations/20261019120000_table_rules_and_comments.sql`

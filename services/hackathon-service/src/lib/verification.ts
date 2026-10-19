@@ -34,6 +34,29 @@ export function assertVerificationRules(payload: HackathonPayload): void {
   }
 }
 
+export function assertShortlistRules(payload: {
+  is_shortlisted?: boolean | null;
+  shortlist_rationale?: string | null;
+}): void {
+  if (!payload.is_shortlisted) {
+    return;
+  }
+
+  if (!payload.shortlist_rationale?.trim()) {
+    throw new Error("Shortlisted records require shortlist_rationale.");
+  }
+}
+
+export function assertFollowupRules(payload: {
+  response_status?: string | null;
+  confirmed_answer?: string | null;
+}): void {
+  const answer = payload.confirmed_answer?.trim() ?? "";
+  if ((payload.response_status ?? "Pending") === "Pending" && answer.length > 0) {
+    throw new Error("Cannot store confirmed_answer while response_status is Pending.");
+  }
+}
+
 export function normalizeWebsite(url: string): string {
   return url.trim().toLowerCase().replace(/\/+$/, "");
 }

@@ -68,10 +68,23 @@ Base URL (local): `http://localhost:4000`
 
 Returns 503 if upstream env is not configured.
 
+## Logging
+
+Each gateway request writes one JSON line with `requestId`, method, path, status, duration, and client IP.
+
+- Development terminals print a readable line. The same JSON is appended to `LOG_FILE_PATH` when that variable is set (`logs/gateway.log` in the local example).
+- Production containers leave `LOG_FILE_PATH` empty and keep JSON on stdout for the host log viewer.
+- Admin key and authorization headers are not written to the log.
+- Creates, updates, blocked IPs, blocked paths, and rejected research rules are logged as their own lines.
+- The hackathon service writes the same shape to its own stdout and optional log file.
+
 ## Verification rules (summary)
+
+These rules are checked by the API and by database constraints in `supabase/migrations/20261019120000_table_rules_and_comments.sql`.
 
 - Verified statuses require evidence links, verifier ≠ researcher, confidence ≠ Low.
 - Shortlist requires `shortlist_rationale`.
-- Duplicate `official_website` returns HTTP 409.
+- A follow-up cannot store `confirmed_answer` while `response_status` is Pending.
+- Duplicate `official_website` returns HTTP 409. Matching ignores case and a trailing slash.
 
 See `docs/RESEARCH-SOP.md` for human research standards.

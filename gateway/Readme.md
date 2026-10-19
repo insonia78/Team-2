@@ -4,7 +4,7 @@ Central entry point for Team-2. **Does not contain business logic** — it route
 
 ## Responsibilities
 
-- Request logging (central-ready JSON)
+- Request logging: readable lines in development, JSON on stdout, and an optional `LOG_FILE_PATH` copy
 - Rate limiting
 - IP/path allow & block lists
 - Admin access-control APIs

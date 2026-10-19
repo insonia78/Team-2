@@ -23,7 +23,9 @@ docker compose up --build
 
 See root `.env.example`, `gateway/.env.example` (if present), `services/hackathon-service/.env.example`, and `.env.production.example`.
 
-**Gateway:** `HACKATHON_SERVICE_URL`, `PORT`, `ADMIN_API_KEY` (no database credentials).
+**Gateway:** `HACKATHON_SERVICE_URL`, `PORT`, `ADMIN_API_KEY` (no database credentials). Optional `LOG_FILE_PATH` for a local JSON log file. Leave it unset in containers.
+
+Apply `supabase/migrations/20261019120000_table_rules_and_comments.sql` after the two earlier migrations. It adds column comments and the research-rule checks.
 
 **Hackathon service:** `DATABASE_URL`, `DATABASE_SSL` (standard PostgreSQL; Supabase is optional hosting only).
 

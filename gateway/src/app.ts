@@ -1,9 +1,12 @@
+import { type Writable } from "node:stream";
+
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import Fastify, { type FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 
 import { env } from "./config/env.js";
+import { buildFastifyLogger, logCompletedRequest } from "./lib/logger.js";
 import { accessControlPlugin } from "./plugins/access-control-plugin.js";
 import { adminRoutes } from "./routes/admin.js";
 import { gatewayInfoRoutes } from "./routes/gateway-info.js";
@@ -11,9 +14,19 @@ import { healthRoutes } from "./routes/health.js";
 import { proxyRoutes } from "./routes/proxy.js";
 import { serviceProxyRoutes } from "./routes/service-proxy.js";
 
-export async function buildApp(): Promise<FastifyInstance> {
+export type BuildAppOptions = {
+  logStream?: Writable;
+};
+
+export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: env.NODE_ENV === "test" ? false : { level: env.LOG_LEVEL },
+    logger: buildFastifyLogger({
+      level: env.LOG_LEVEL,
+      nodeEnv: env.NODE_ENV,
+      serviceName: env.SERVICE_NAME,
+      logFilePath: env.LOG_FILE_PATH,
+      stream: options.logStream,
+    }),
     requestIdHeader: "x-request-id",
     genReqId: (request) =>
       (request.headers["x-request-id"] as string | undefined) ?? crypto.randomUUID(),
@@ -24,17 +37,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   app.addHook("onResponse", async (request, reply) => {
-    request.log.info(
-      {
-        requestId: request.id,
-        method: request.method,
-        path: request.url,
-        statusCode: reply.statusCode,
-        service: env.SERVICE_NAME,
-        role: "api-gateway",
-      },
-      "gateway request completed",
-    );
+    logCompletedRequest(request, reply, env.SERVICE_NAME, "gateway request completed");
   });
 
   await app.register(cors, { origin: true });
@@ -49,7 +52,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(serviceProxyRoutes);
   await app.register(proxyRoutes);
 
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler((error, request, reply) => {
     const zodError =
       error instanceof ZodError
         ? error
@@ -58,12 +61,14 @@ export async function buildApp(): Promise<FastifyInstance> {
           : undefined;
 
     if (zodError) {
+      request.log.warn({ err: zodError, requestId: request.id }, "validation failed");
       return reply.code(400).send({
         error: "Validation failed.",
         details: zodError.flatten(),
       });
     }
 
+    request.log.error({ err: error, requestId: request.id }, "unhandled error");
     reply.code(500).send({ error: "Internal server error." });
   });
 

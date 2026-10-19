@@ -11,6 +11,13 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   SERVICE_NAME: z.string().default("hackathon-service"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
+  LOG_FILE_PATH: z
+    .string()
+    .optional()
+    .transform((value) => {
+      const trimmed = value?.trim();
+      return trimmed ? trimmed : undefined;
+    }),
 
   /** Standard PostgreSQL connection string (works with Supabase, RDS, local Postgres, etc.) */
   DATABASE_URL: z.string().min(1),

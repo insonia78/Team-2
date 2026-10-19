@@ -16,7 +16,11 @@ process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
 try {
   await app.listen({ port: env.PORT, host: "0.0.0.0" });
-  app.log.info({ port: env.PORT, service: env.SERVICE_NAME }, "hackathon-service listening");
+  const logTarget = env.LOG_FILE_PATH ? "stdout and file" : "stdout";
+  app.log.info(
+    { port: env.PORT, service: env.SERVICE_NAME, logFile: env.LOG_FILE_PATH ?? null },
+    `hackathon-service listening; logging to ${logTarget}`,
+  );
 } catch (err) {
   app.log.error(err);
   process.exit(1);

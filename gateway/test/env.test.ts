@@ -15,6 +15,12 @@ describe("loadEnv", () => {
     expect(env.IP_ALLOWLIST).toEqual([]);
     expect(env.AI_SERVICE_URL).toBeUndefined();
     expect(env.PROXY_GRAPHQL_UPSTREAM_URL).toBeUndefined();
+    expect(env.LOG_FILE_PATH).toBeUndefined();
+  });
+
+  it("treats a blank log path as unset and keeps a real path", () => {
+    expect(loadEnv({ LOG_FILE_PATH: "  " }).LOG_FILE_PATH).toBeUndefined();
+    expect(loadEnv({ LOG_FILE_PATH: " logs/gateway.log " }).LOG_FILE_PATH).toBe("logs/gateway.log");
   });
 
   it("parses numbers and comma-separated lists", () => {

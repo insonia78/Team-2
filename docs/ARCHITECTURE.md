@@ -27,6 +27,11 @@
 - Single public URL for the team
 - Proxies paths to internal services
 - No Supabase credentials in gateway
+- Request logs go to stdout as JSON. In development they are also printed as readable lines, and copied to `LOG_FILE_PATH` when set. The hackathon service logs the same way.
+
+## Database rules
+
+`supabase/migrations/20261019120000_table_rules_and_comments.sql` adds column descriptions plus checks for verified rows, shortlist rationale, evidence links, and pending follow-ups. The unique website index uses the same normalization as the API.
 
 ## Hackathon service (`services/hackathon-service/`)
 

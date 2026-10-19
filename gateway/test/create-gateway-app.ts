@@ -1,3 +1,5 @@
+import type { Writable } from "node:stream";
+
 import type { FastifyInstance } from "fastify";
 import { vi } from "vitest";
 
@@ -6,6 +8,7 @@ const GATEWAY_ENV_KEYS = [
   "PORT",
   "SERVICE_NAME",
   "LOG_LEVEL",
+  "LOG_FILE_PATH",
   "HACKATHON_SERVICE_URL",
   "AI_SERVICE_URL",
   "SCRAPER_SERVICE_URL",
@@ -21,7 +24,10 @@ const GATEWAY_ENV_KEYS = [
 type GatewayEnvKey = (typeof GATEWAY_ENV_KEYS)[number];
 type EnvOverrides = Partial<Record<GatewayEnvKey, string | undefined>>;
 
-export async function createGatewayApp(overrides: EnvOverrides = {}): Promise<FastifyInstance> {
+export async function createGatewayApp(
+  overrides: EnvOverrides = {},
+  options: { logStream?: Writable } = {},
+): Promise<FastifyInstance> {
   for (const key of GATEWAY_ENV_KEYS) {
     delete process.env[key];
   }
@@ -48,5 +54,5 @@ export async function createGatewayApp(overrides: EnvOverrides = {}): Promise<Fa
 
   vi.resetModules();
   const { buildApp } = await import("../src/app.js");
-  return buildApp();
+  return buildApp(options);
 }

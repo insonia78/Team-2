@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { assertVerificationRules, normalizeWebsite } from "./verification.js";
+import {
+  assertFollowupRules,
+  assertShortlistRules,
+  assertVerificationRules,
+  normalizeWebsite,
+} from "./verification.js";
 
 describe("normalizeWebsite", () => {
   it("lowercases and trims trailing slash", () => {
@@ -41,5 +46,28 @@ describe("assertVerificationRules", () => {
         evidence_links: [{ label: "site", url: "https://example.com" }],
       }),
     ).toThrow(/different/i);
+  });
+});
+
+describe("assertShortlistRules", () => {
+  it("requires a written rationale when the row is shortlisted", () => {
+    expect(() => assertShortlistRules({ is_shortlisted: false })).not.toThrow();
+    expect(() =>
+      assertShortlistRules({ is_shortlisted: true, shortlist_rationale: "   " }),
+    ).toThrow(/shortlist_rationale/i);
+  });
+});
+
+describe("assertFollowupRules", () => {
+  it("blocks a confirmed answer while the follow-up is pending", () => {
+    expect(() =>
+      assertFollowupRules({ response_status: "Pending", confirmed_answer: "yes" }),
+    ).toThrow(/pending/i);
+  });
+
+  it("allows a confirmed answer after a reply", () => {
+    expect(() =>
+      assertFollowupRules({ response_status: "Replied", confirmed_answer: "Travel is covered." }),
+    ).not.toThrow();
   });
 });

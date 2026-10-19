@@ -30,10 +30,14 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
     role: "api-gateway",
   }));
 
-  app.get("/health/ready", async (_request, reply) => {
+  app.get("/health/ready", async (request, reply) => {
     const hackathonOk = await checkDownstream(env.HACKATHON_SERVICE_URL);
 
     if (!hackathonOk) {
+      request.log.warn(
+        { downstream: "hackathon-service", requestId: request.id },
+        "readiness check failed",
+      );
       return reply.code(503).send({
         ok: false,
         check: "readiness",

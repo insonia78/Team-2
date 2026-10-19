@@ -22,6 +22,13 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   SERVICE_NAME: z.string().default("team-2-gateway"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
+  LOG_FILE_PATH: z
+    .string()
+    .optional()
+    .transform((value) => {
+      const trimmed = value?.trim();
+      return trimmed ? trimmed : undefined;
+    }),
 
   HACKATHON_SERVICE_URL: z.string().url().default("http://127.0.0.1:4001"),
   AI_SERVICE_URL: z.string().url().optional(),

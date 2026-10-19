@@ -17,9 +17,10 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
     service: env.SERVICE_NAME,
   }));
 
-  app.get("/health/ready", async (_request, reply) => {
+  app.get("/health/ready", async (request, reply) => {
     const databaseOk = await checkDatabaseConnection();
     if (!databaseOk) {
+      request.log.warn({ requestId: request.id }, "readiness check failed");
       return reply.code(503).send({
         ok: false,
         check: "readiness",
