@@ -24,6 +24,7 @@ jobs:
           node-version: "22"
       - run: npm install
       - run: npm run typecheck
+      - run: npm test
 
   hackathon-service:
     runs-on: ubuntu-latest

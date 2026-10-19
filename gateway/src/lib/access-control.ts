@@ -5,18 +5,30 @@ import { env } from "../config/env.js";
 const runtimeBlockedPaths = new Set<string>();
 const runtimeBlockedIps = new Set<string>();
 
-export function seedRuntimeBlocklists(): void {
-  env.PATH_BLOCKLIST.forEach((path) => runtimeBlockedPaths.add(path));
-  env.IP_BLOCKLIST.forEach((ip) => runtimeBlockedIps.add(ip));
+export function resetRuntimeBlocklists(): void {
+  runtimeBlockedPaths.clear();
+  runtimeBlockedIps.clear();
 }
 
 export function getAccessControlSnapshot() {
   return {
     ip_allowlist: env.IP_ALLOWLIST,
-    ip_blocklist: [...env.IP_BLOCKLIST, ...runtimeBlockedIps],
-    path_blocklist: [...env.PATH_BLOCKLIST, ...runtimeBlockedPaths],
+    ip_blocklist: unique([...env.IP_BLOCKLIST, ...runtimeBlockedIps]),
+    path_blocklist: unique([...env.PATH_BLOCKLIST, ...runtimeBlockedPaths]),
     note: "Runtime blocklists reset when the process restarts.",
   };
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values)];
+}
+
+function pathIsBlocked(path: string, blocked: string): boolean {
+  const normalized = blocked.length > 1 && blocked.endsWith("/") ? blocked.slice(0, -1) : blocked;
+  if (normalized === "/") {
+    return true;
+  }
+  return path === normalized || path.startsWith(`${normalized}/`);
 }
 
 export function blockPath(path: string): void {
@@ -49,7 +61,7 @@ export function evaluateAccess(request: FastifyRequest): { allowed: boolean; rea
   }
 
   const blockedPaths = [...env.PATH_BLOCKLIST, ...runtimeBlockedPaths];
-  if (blockedPaths.some((blocked) => path.startsWith(blocked))) {
+  if (blockedPaths.some((blocked) => pathIsBlocked(path, blocked))) {
     return { allowed: false, reason: `Path ${path} is blocked.` };
   }
 

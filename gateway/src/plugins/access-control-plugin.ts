@@ -1,9 +1,10 @@
 import type { FastifyPluginAsync } from "fastify";
+import fp from "fastify-plugin";
 
-import { evaluateAccess, seedRuntimeBlocklists } from "../lib/access-control.js";
+import { evaluateAccess, resetRuntimeBlocklists } from "../lib/access-control.js";
 
-export const accessControlPlugin: FastifyPluginAsync = async (app) => {
-  seedRuntimeBlocklists();
+const accessControlPluginImpl: FastifyPluginAsync = async (app) => {
+  resetRuntimeBlocklists();
 
   app.addHook("onRequest", async (request, reply) => {
     const result = evaluateAccess(request);
@@ -13,3 +14,9 @@ export const accessControlPlugin: FastifyPluginAsync = async (app) => {
     }
   });
 };
+
+// fastify-plugin shares this hook with every route. A normal register()
+// would keep the hook inside the plugin, so /health and /api would skip it.
+export const accessControlPlugin = fp(accessControlPluginImpl, {
+  name: "team-2-access-control",
+});

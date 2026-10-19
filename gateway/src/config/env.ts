@@ -1,7 +1,9 @@
 import { config } from "dotenv";
 import { z } from "zod";
 
-config();
+if (process.env.NODE_ENV !== "test") {
+  config();
+}
 
 const csvList = z
   .string()
@@ -37,4 +39,10 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60_000),
 });
 
-export const env = envSchema.parse(process.env);
+export type GatewayEnv = z.infer<typeof envSchema>;
+
+export function loadEnv(source: NodeJS.ProcessEnv = process.env): GatewayEnv {
+  return envSchema.parse(source);
+}
+
+export const env = loadEnv();

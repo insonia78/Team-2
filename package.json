@@ -7,7 +7,7 @@
     "dev:gateway": "npm run dev --prefix gateway",
     "install:all": "npm install --prefix services/hackathon-service && npm install --prefix gateway",
     "typecheck": "npm run typecheck --prefix services/hackathon-service && npm run typecheck --prefix gateway",
-    "test": "npm test --prefix services/hackathon-service"
+    "test": "npm test --prefix services/hackathon-service && npm test --prefix gateway"
   },
   "engines": {
     "node": ">=20"

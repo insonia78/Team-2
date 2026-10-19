@@ -1,5 +1,5 @@
-import type { FastifyPluginAsync } from "fastify";
-import { z } from "zod";
+import type { FastifyPluginAsync, FastifyReply } from "fastify";
+import { z, type ZodType } from "zod";
 
 import {
   blockIp,
@@ -8,28 +8,49 @@ import {
 } from "../lib/access-control.js";
 import { requireAdmin } from "../plugins/admin-auth.js";
 
+const blockPathBody = z.object({ path: z.string().min(1) });
+const blockIpBody = z.object({ ip: z.string().min(1) });
+
+function parseBody<T>(schema: ZodType<T>, body: unknown, reply: FastifyReply): T | undefined {
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    reply.code(400).send({
+      error: "Validation failed.",
+      details: parsed.error.flatten(),
+    });
+    return undefined;
+  }
+  return parsed.data;
+}
+
 export const adminRoutes: FastifyPluginAsync = async (app) => {
   app.get("/admin/access-control", async (request, reply) => {
     if (!requireAdmin(request, reply)) {
-      return;
+      return reply;
     }
     return getAccessControlSnapshot();
   });
 
   app.post("/admin/access-control/block-path", async (request, reply) => {
     if (!requireAdmin(request, reply)) {
-      return;
+      return reply;
     }
-    const body = z.object({ path: z.string().min(1) }).parse(request.body);
+    const body = parseBody(blockPathBody, request.body, reply);
+    if (!body) {
+      return reply;
+    }
     blockPath(body.path);
     return { ok: true, blocked_path: body.path };
   });
 
   app.post("/admin/access-control/block-ip", async (request, reply) => {
     if (!requireAdmin(request, reply)) {
-      return;
+      return reply;
     }
-    const body = z.object({ ip: z.string().min(1) }).parse(request.body);
+    const body = parseBody(blockIpBody, request.body, reply);
+    if (!body) {
+      return reply;
+    }
     blockIp(body.ip);
     return { ok: true, blocked_ip: body.ip };
   });

@@ -13,9 +13,7 @@ import { serviceProxyRoutes } from "./routes/service-proxy.js";
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: {
-      level: env.LOG_LEVEL,
-    },
+    logger: env.NODE_ENV === "test" ? false : { level: env.LOG_LEVEL },
     requestIdHeader: "x-request-id",
     genReqId: (request) =>
       (request.headers["x-request-id"] as string | undefined) ?? crypto.randomUUID(),
@@ -52,10 +50,17 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(proxyRoutes);
 
   app.setErrorHandler((error, _request, reply) => {
-    if (error instanceof ZodError) {
+    const zodError =
+      error instanceof ZodError
+        ? error
+        : error instanceof Error && error.cause instanceof ZodError
+          ? error.cause
+          : undefined;
+
+    if (zodError) {
       return reply.code(400).send({
         error: "Validation failed.",
-        details: error.flatten(),
+        details: zodError.flatten(),
       });
     }
 

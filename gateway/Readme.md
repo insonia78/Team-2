@@ -33,4 +33,12 @@ npm install && npm run dev
 
 Clients call **http://localhost:4000** only.
 
+## Test
+
+From `gateway/`:
+
+```bash
+npm test
+```
+
 Inspect routes: `GET http://localhost:4000/gateway/routes`
