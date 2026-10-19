@@ -30,8 +30,6 @@ Codyza **Team 02 Task 01**: verified hackathon research platform (database + API
 - [API](docs/API.md)
 - [Deployment](docs/DEPLOYMENT.md)
 - [Research SOP](docs/RESEARCH-SOP.md)
-- [Gateway task progress](docs/GATEWAY-TASK-PROGRESS.md) — update GitHub Project from here
-- [How to update GitHub task](docs/HOW-TO-UPDATE-GITHUB-TASK.md)
 
 ## Docker (gateway stack)
 
