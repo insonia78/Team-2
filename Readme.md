@@ -17,10 +17,7 @@ Codyza **Team 02 Task 01**: verified hackathon research platform (database + API
 
 ## Quick start (gateway + hackathon API)
 
-1. Create Supabase project and run migrations in order:
-   - `supabase/migrations/20261009120000_hackathons.sql`
-   - `supabase/migrations/20261012120000_organizer_followups.sql`
-   - `supabase/migrations/20261019120000_table_rules_and_comments.sql`
+1. Create the Postgres database and run migrations in order. The live schema is `hackathon_research` from `supabase/migrations/20261020180000_hackathon_research.sql`. The earlier `public.hackathons` scripts are the retired flat table.
 2. Configure env (see [LOCAL-RUN.md](docs/LOCAL-RUN.md)): `services/hackathon-service/.env` + `gateway/.env`
 3. Start **hackathon-service** then **gateway** (or `npm run dev:hackathon` / `dev:gateway` from repo root).
 4. Verify: `GET http://localhost:4000/health/ready` and `GET http://localhost:4000/gateway/routes`

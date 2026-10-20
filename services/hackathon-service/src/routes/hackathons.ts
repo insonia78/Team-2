@@ -1,304 +1,287 @@
-import { and, asc, eq, gte, inArray, isNotNull, lte, ne } from "drizzle-orm";
-import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
-import { z } from "zod";
+import { and, asc, eq, ne, sql } from "drizzle-orm";
+import type { FastifyPluginAsync } from "fastify";
 
 import { db } from "../db/client.js";
-import { hackathonToApi, toHackathonInsert, toHackathonUpdate } from "../db/mappers.js";
-import { hackathons } from "../db/schema.js";
-import { findDuplicateByWebsite } from "../lib/dedupe.js";
-import { mapDatabaseError } from "../lib/pg-errors.js";
-import { assertShortlistRules, assertVerificationRules } from "../lib/verification.js";
+import { toApiRecord, toEventInsert, toEventUpdate } from "../db/mappers.js";
 import {
-  hackathonCreateSchema,
-  hackathonListQuerySchema,
-  hackathonUpdateSchema,
+  applyNowQueue,
+  codyzaShortlist,
+  deadlinesNext30Days,
+  deadlinesNext7Days,
+  events,
+  prepareBeforeOpeningQueue,
+  sourceEvidenceAppendix,
+  travelSupportedOpportunities,
+  upcomingMonitoringList,
+  virtualHybridOpportunities,
+} from "../db/schema.js";
+import { replyForDatabaseError, rejectRule } from "../lib/http.js";
+import { assertEventConstraints, type IdentityInput } from "../lib/verification.js";
+import {
+  deadlineQuerySchema,
+  eventCreateSchema,
+  eventListQuerySchema,
+  eventUpdateSchema,
+  type EventCreateInput,
 } from "../schemas/hackathon.js";
 
-const deadlineQuerySchema = z.object({
-  withinDays: z.coerce.number().int().min(1).max(365).default(30),
-});
-
-function rejectRule(request: FastifyRequest, reply: FastifyReply, err: unknown) {
-  const message = err instanceof Error ? err.message : "Invalid verification data.";
-  request.log.warn({ requestId: request.id, reason: message }, "record rejected by research rules");
-  return reply.code(400).send({ error: message });
-}
-
-function replyForDatabaseError(
-  request: FastifyRequest,
-  reply: FastifyReply,
-  error: unknown,
-  fallback: string,
-) {
-  const mapped = mapDatabaseError(error);
-  if (mapped) {
-    request.log.warn({ err: error, requestId: request.id }, mapped.error);
-    return reply.code(mapped.statusCode).send({ error: mapped.error });
+async function findIdentityConflict(input: IdentityInput, excludeEventId?: number) {
+  const conditions = [
+    eq(events.eventName, input.event_name),
+    sql`coalesce(${events.eventStartDate}, date '1900-01-01') = ${input.event_start_date ?? "1900-01-01"}::date`,
+    sql`coalesce(${events.city}, '') = ${input.city ?? ""}`,
+    sql`coalesce(${events.country}, '') = ${input.country ?? ""}`,
+  ];
+  if (excludeEventId !== undefined) {
+    conditions.push(ne(events.eventId, excludeEventId));
   }
 
-  request.log.error({ err: error, requestId: request.id }, fallback);
-  return reply.code(500).send({ error: fallback });
+  const rows = await db
+    .select({ eventId: events.eventId, eventName: events.eventName })
+    .from(events)
+    .where(and(...conditions))
+    .limit(1);
+  return rows[0];
+}
+
+async function selectView(
+  view:
+    | typeof applyNowQueue
+    | typeof prepareBeforeOpeningQueue
+    | typeof upcomingMonitoringList
+    | typeof codyzaShortlist
+    | typeof virtualHybridOpportunities
+    | typeof travelSupportedOpportunities
+    | typeof deadlinesNext7Days
+    | typeof deadlinesNext30Days
+    | typeof sourceEvidenceAppendix,
+) {
+  const rows = await db.select().from(view);
+  return rows.map(toApiRecord);
 }
 
 export const hackathonRoutes: FastifyPluginAsync = async (app) => {
-  app.get("/api/hackathons", async (request, reply) => {
-    const query = hackathonListQuerySchema.parse(request.query);
-    const conditions = [];
-
-    if (query.status) conditions.push(eq(hackathons.status, query.status));
-    if (query.confidence) conditions.push(eq(hackathons.confidence, query.confidence));
-    if (query.format) conditions.push(eq(hackathons.format, query.format));
-    if (query.shortlisted !== undefined) conditions.push(eq(hackathons.isShortlisted, query.shortlisted));
-
-    try {
-      const rows = await db
-        .select()
-        .from(hackathons)
-        .where(conditions.length ? and(...conditions) : undefined)
-        .orderBy(asc(hackathons.registrationDeadline))
-        .limit(query.limit);
-
-      const data = rows.map(hackathonToApi);
-      return { data, count: data.length };
-    } catch (error) {
-      request.log.error({ err: error, requestId: request.id }, "failed to list hackathons");
-      return reply.code(500).send({ error: "Failed to list hackathons." });
-    }
-  });
-
   app.get("/api/hackathons/views/apply-now", async (request, reply) => {
     try {
-      const rows = await db
-        .select()
-        .from(hackathons)
-        .where(eq(hackathons.status, "Verified - Apply Now"))
-        .orderBy(asc(hackathons.registrationDeadline));
-      const data = rows.map(hackathonToApi);
-      return { data, count: data.length };
+      const data = await selectView(applyNowQueue);
+      return { data, count: data.length, view: "v_apply_now_queue" };
     } catch (error) {
-      request.log.error({ err: error, requestId: request.id }, "failed to load Apply Now view");
-      return reply.code(500).send({ error: "Failed to load Apply Now view." });
+      return replyForDatabaseError(request, reply, error, "Failed to load Apply Now view.");
     }
   });
 
   app.get("/api/hackathons/views/prepare-before-opening", async (request, reply) => {
     try {
-      const rows = await db
-        .select()
-        .from(hackathons)
-        .where(eq(hackathons.status, "Verified - Registration Upcoming"))
-        .orderBy(asc(hackathons.registrationDeadline));
-      const data = rows.map(hackathonToApi);
-      return { data, count: data.length };
+      const data = await selectView(prepareBeforeOpeningQueue);
+      return { data, count: data.length, view: "v_prepare_before_opening_queue" };
     } catch (error) {
-      request.log.error({ err: error, requestId: request.id }, "failed to load Prepare Before Opening view");
-      return reply.code(500).send({ error: "Failed to load Prepare Before Opening view." });
+      return replyForDatabaseError(request, reply, error, "Failed to load Prepare Before Opening view.");
     }
   });
 
   app.get("/api/hackathons/views/monitor", async (request, reply) => {
     try {
-      const rows = await db
-        .select()
-        .from(hackathons)
-        .where(eq(hackathons.status, "Monitor"))
-        .orderBy(asc(hackathons.eventStart));
-      const data = rows.map(hackathonToApi);
-      return { data, count: data.length };
+      const data = await selectView(upcomingMonitoringList);
+      return { data, count: data.length, view: "v_upcoming_monitoring_list" };
     } catch (error) {
-      request.log.error({ err: error, requestId: request.id }, "failed to load monitor view");
-      return reply.code(500).send({ error: "Failed to load monitor view." });
+      return replyForDatabaseError(request, reply, error, "Failed to load monitor view.");
     }
   });
 
   app.get("/api/hackathons/views/shortlist", async (request, reply) => {
     try {
-      const rows = await db
-        .select()
-        .from(hackathons)
-        .where(eq(hackathons.isShortlisted, true))
-        .orderBy(asc(hackathons.registrationDeadline));
-      const data = rows.map(hackathonToApi);
-      return { data, count: data.length };
+      const data = await selectView(codyzaShortlist);
+      return { data, count: data.length, view: "v_codyza_shortlist" };
     } catch (error) {
-      request.log.error({ err: error, requestId: request.id }, "failed to load shortlist view");
-      return reply.code(500).send({ error: "Failed to load shortlist view." });
+      return replyForDatabaseError(request, reply, error, "Failed to load shortlist view.");
     }
   });
 
   app.get("/api/hackathons/views/virtual-hybrid", async (request, reply) => {
     try {
-      const rows = await db
-        .select()
-        .from(hackathons)
-        .where(inArray(hackathons.format, ["virtual", "hybrid"]))
-        .orderBy(asc(hackathons.registrationDeadline));
-      const data = rows.map(hackathonToApi);
-      return { data, count: data.length };
+      const data = await selectView(virtualHybridOpportunities);
+      return { data, count: data.length, view: "v_virtual_hybrid_opportunities" };
     } catch (error) {
-      request.log.error({ err: error, requestId: request.id }, "failed to load virtual/hybrid view");
-      return reply.code(500).send({ error: "Failed to load virtual/hybrid view." });
+      return replyForDatabaseError(request, reply, error, "Failed to load virtual/hybrid view.");
     }
   });
 
   app.get("/api/hackathons/views/travel-supported", async (request, reply) => {
     try {
-      const rows = await db
-        .select()
-        .from(hackathons)
-        .where(
-          and(
-            isNotNull(hackathons.travelSupport),
-            ne(hackathons.travelSupport, ""),
-            ne(hackathons.travelSupport, "not confirmed"),
-            ne(hackathons.travelSupport, "not provided"),
-          ),
-        )
-        .orderBy(asc(hackathons.registrationDeadline));
-      const data = rows.map(hackathonToApi);
-      return { data, count: data.length };
+      const data = await selectView(travelSupportedOpportunities);
+      return { data, count: data.length, view: "v_travel_supported_opportunities" };
     } catch (error) {
-      request.log.error({ err: error, requestId: request.id }, "failed to load travel-supported view");
-      return reply.code(500).send({ error: "Failed to load travel-supported view." });
+      return replyForDatabaseError(request, reply, error, "Failed to load travel-supported view.");
+    }
+  });
+
+  app.get("/api/hackathons/views/evidence", async (request, reply) => {
+    try {
+      const data = await selectView(sourceEvidenceAppendix);
+      return { data, count: data.length, view: "v_source_evidence_appendix" };
+    } catch (error) {
+      return replyForDatabaseError(request, reply, error, "Failed to load evidence appendix.");
     }
   });
 
   app.get("/api/hackathons/views/deadlines", async (request, reply) => {
     const { withinDays } = deadlineQuerySchema.parse(request.query);
-    const now = new Date();
-    const upper = new Date(now);
-    upper.setDate(upper.getDate() + withinDays);
+    try {
+      if (withinDays === 7) {
+        const data = await selectView(deadlinesNext7Days);
+        return { data, count: data.length, withinDays, view: "v_deadlines_next_7_days" };
+      }
+      if (withinDays === 30) {
+        const data = await selectView(deadlinesNext30Days);
+        return { data, count: data.length, withinDays, view: "v_deadlines_next_30_days" };
+      }
+
+      const result = await db.execute(sql`
+        SELECT
+          e.event_id,
+          e.event_name,
+          m.milestone_type,
+          m.milestone_name,
+          m.due_at,
+          m.timezone_name,
+          e.registration_link,
+          e.official_website
+        FROM hackathon_research.event_milestones AS m
+        JOIN hackathon_research.events AS e ON e.event_id = m.event_id
+        WHERE m.due_at IS NOT NULL
+          AND m.due_at >= NOW()
+          AND m.due_at < NOW() + (${withinDays}::int * INTERVAL '1 day')
+        ORDER BY m.due_at
+      `);
+      const data = result.rows;
+      return { data, count: data.length, withinDays };
+    } catch (error) {
+      return replyForDatabaseError(request, reply, error, "Failed to load deadline view.");
+    }
+  });
+
+  app.get("/api/hackathons", async (request, reply) => {
+    const query = eventListQuerySchema.parse(request.query);
+    const conditions = [];
+    if (query.operational_status) conditions.push(eq(events.operationalStatus, query.operational_status));
+    if (query.evidence_confidence) conditions.push(eq(events.evidenceConfidence, query.evidence_confidence));
+    if (query.format) conditions.push(eq(events.format, query.format));
 
     try {
       const rows = await db
         .select()
-        .from(hackathons)
-        .where(
-          and(
-            gte(hackathons.registrationDeadline, now),
-            lte(hackathons.registrationDeadline, upper),
-          ),
-        )
-        .orderBy(asc(hackathons.registrationDeadline));
-      const data = rows.map(hackathonToApi);
-      return { data, count: data.length, withinDays };
+        .from(events)
+        .where(conditions.length ? and(...conditions) : undefined)
+        .orderBy(sql`${events.registrationDeadlineAt} asc nulls last`, asc(events.eventName))
+        .limit(query.limit);
+      const data = rows.map(toApiRecord);
+      return { data, count: data.length };
     } catch (error) {
-      request.log.error({ err: error, requestId: request.id }, "failed to load deadline view");
-      return reply.code(500).send({ error: "Failed to load deadline view." });
+      return replyForDatabaseError(request, reply, error, "Failed to list hackathons.");
     }
   });
 
   app.get("/api/hackathons/:id", async (request, reply) => {
-    const { id } = request.params as { id: string };
+    const eventId = Number((request.params as { id: string }).id);
+    if (!Number.isInteger(eventId) || eventId <= 0) {
+      return reply.code(400).send({ error: "event_id must be a positive integer." });
+    }
 
     try {
-      const rows = await db.select().from(hackathons).where(eq(hackathons.id, id)).limit(1);
+      const rows = await db.select().from(events).where(eq(events.eventId, eventId)).limit(1);
       const row = rows[0];
-      if (!row) {
-        return reply.code(404).send({ error: "Hackathon not found." });
-      }
-      return { data: hackathonToApi(row) };
+      if (!row) return reply.code(404).send({ error: "Hackathon not found." });
+      return { data: toApiRecord(row) };
     } catch (error) {
-      request.log.error({ err: error, requestId: request.id }, "failed to fetch hackathon");
-      return reply.code(500).send({ error: "Failed to fetch hackathon." });
+      return replyForDatabaseError(request, reply, error, "Failed to fetch hackathon.");
     }
   });
 
   app.post("/api/hackathons", async (request, reply) => {
-    const payload = hackathonCreateSchema.parse(request.body);
-
+    const payload = eventCreateSchema.parse(request.body);
     try {
-      assertVerificationRules(payload);
-      assertShortlistRules(payload);
+      assertEventConstraints(payload);
     } catch (err) {
       return rejectRule(request, reply, err);
     }
 
     try {
-      const existingRows = await db
-        .select({
-          id: hackathons.id,
-          event_name: hackathons.eventName,
-          official_website: hackathons.officialWebsite,
-        })
-        .from(hackathons);
-
-      const existing = findDuplicateByWebsite(existingRows, payload.official_website);
+      const existing = await findIdentityConflict(payload);
       if (existing) {
         return reply.code(409).send({
-          error: "Duplicate official_website.",
-          existing_id: existing.id,
-          existing_event_name: existing.event_name,
+          error: "An event with this name, start date, city, and country already exists.",
+          existing_event_id: existing.eventId,
+          existing_event_name: existing.eventName,
         });
       }
 
-      const [row] = await db.insert(hackathons).values(toHackathonInsert(payload)).returning();
+      const [row] = await db.insert(events).values(toEventInsert(payload)).returning();
       request.log.info(
-        { action: "hackathon_created", id: row!.id, eventName: row!.eventName, requestId: request.id },
-        "hackathon created",
+        { action: "event_created", eventId: row!.eventId, eventName: row!.eventName, requestId: request.id },
+        "event created",
       );
-      return reply.code(201).send({ data: hackathonToApi(row!) });
+      return reply.code(201).send({ data: toApiRecord(row!) });
     } catch (error) {
       return replyForDatabaseError(request, reply, error, "Failed to create hackathon.");
     }
   });
 
   app.patch("/api/hackathons/:id", async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const patch = hackathonUpdateSchema.parse(request.body);
+    const eventId = Number((request.params as { id: string }).id);
+    if (!Number.isInteger(eventId) || eventId <= 0) {
+      return reply.code(400).send({ error: "event_id must be a positive integer." });
+    }
+    const patch = eventUpdateSchema.parse(request.body);
 
     try {
-      const rows = await db.select().from(hackathons).where(eq(hackathons.id, id)).limit(1);
+      const rows = await db.select().from(events).where(eq(events.eventId, eventId)).limit(1);
       const current = rows[0];
-      if (!current) {
-        return reply.code(404).send({ error: "Hackathon not found." });
-      }
+      if (!current) return reply.code(404).send({ error: "Hackathon not found." });
 
-      const apiRow = hackathonToApi(current);
-      const merged = { ...apiRow, ...patch };
+      const merged: EventCreateInput = {
+        event_name: patch.event_name ?? current.eventName,
+        event_start_date: patch.event_start_date !== undefined ? patch.event_start_date : current.eventStartDate,
+        event_end_date: patch.event_end_date !== undefined ? patch.event_end_date : current.eventEndDate,
+        city: patch.city !== undefined ? patch.city : current.city,
+        country: patch.country !== undefined ? patch.country : current.country,
+        team_size_min: patch.team_size_min !== undefined ? patch.team_size_min : current.teamSizeMin,
+        team_size_max: patch.team_size_max !== undefined ? patch.team_size_max : current.teamSizeMax,
+        registration_fee_amount:
+          patch.registration_fee_amount !== undefined
+            ? patch.registration_fee_amount
+            : current.registrationFeeAmount === null
+              ? null
+              : Number(current.registrationFeeAmount),
+        registration_fee_currency:
+          patch.registration_fee_currency !== undefined
+            ? patch.registration_fee_currency
+            : current.registrationFeeCurrency,
+        duplicate_of_event_id:
+          patch.duplicate_of_event_id !== undefined ? patch.duplicate_of_event_id : current.duplicateOfEventId,
+        operational_status: patch.operational_status ?? current.operationalStatus,
+        evidence_confidence: patch.evidence_confidence ?? current.evidenceConfidence,
+      };
 
       try {
-        assertVerificationRules({
-          status: merged.status as typeof patch.status,
-          confidence: merged.confidence as typeof patch.confidence,
-          evidence_links: merged.evidence_links ?? [],
-          researcher_name: merged.researcher_name ?? undefined,
-          verifier_name: merged.verifier_name ?? undefined,
-        });
-        assertShortlistRules({
-          is_shortlisted: merged.is_shortlisted,
-          shortlist_rationale: merged.shortlist_rationale,
-        });
+        assertEventConstraints({ ...merged, event_id: eventId });
       } catch (err) {
         return rejectRule(request, reply, err);
       }
 
-      if (patch.official_website) {
-        const others = await db
-          .select({
-            id: hackathons.id,
-            official_website: hackathons.officialWebsite,
-          })
-          .from(hackathons)
-          .where(ne(hackathons.id, id));
-
-        const duplicate = findDuplicateByWebsite(others, patch.official_website, id);
-        if (duplicate) {
-          return reply.code(409).send({ error: "Duplicate official_website.", existing_id: duplicate.id });
-        }
+      const existing = await findIdentityConflict(merged, eventId);
+      if (existing) {
+        return reply.code(409).send({
+          error: "An event with this name, start date, city, and country already exists.",
+          existing_event_id: existing.eventId,
+        });
       }
 
-      const [row] = await db
-        .update(hackathons)
-        .set(toHackathonUpdate(patch))
-        .where(eq(hackathons.id, id))
-        .returning();
-
+      const [row] = await db.update(events).set(toEventUpdate(patch)).where(eq(events.eventId, eventId)).returning();
       request.log.info(
-        { action: "hackathon_updated", id: row!.id, eventName: row!.eventName, requestId: request.id },
-        "hackathon updated",
+        { action: "event_updated", eventId: row!.eventId, eventName: row!.eventName, requestId: request.id },
+        "event updated",
       );
-      return { data: hackathonToApi(row!) };
+      return { data: toApiRecord(row!) };
     } catch (error) {
       return replyForDatabaseError(request, reply, error, "Failed to update hackathon.");
     }

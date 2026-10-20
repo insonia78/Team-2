@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 
 import { env } from "./config/env.js";
 import { buildFastifyLogger, logCompletedRequest } from "./lib/logger.js";
+import { eventDetailRoutes } from "./routes/event-details.js";
 import { exportRoutes } from "./routes/exports.js";
 import { hackathonRoutes } from "./routes/hackathons.js";
 import { healthRoutes } from "./routes/health.js";
@@ -28,6 +29,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await app.register(cors, { origin: true });
   await app.register(healthRoutes);
+  await app.register(eventDetailRoutes);
   await app.register(hackathonRoutes);
   await app.register(organizerFollowupRoutes);
   await app.register(exportRoutes);

@@ -30,10 +30,32 @@ Base URL (local): `http://localhost:4000`
 | GET | `/api/hackathons/views/virtual-hybrid` |
 | GET | `/api/hackathons/views/travel-supported` |
 | GET | `/api/hackathons/views/deadlines?withinDays=7` |
+| GET | `/api/hackathons/views/evidence` |
+
+`withinDays=7` reads `v_deadlines_next_7_days`. `withinDays=30` reads `v_deadlines_next_30_days`. Apply Now and Prepare Before Opening read the shortlist queue views, not `operational_status` alone. Monitor reads `v_upcoming_monitoring_list`.
 
 ### List query params
 
-- `status`, `confidence`, `format`, `shortlisted`, `limit`
+- `operational_status`, `evidence_confidence`, `format`, `limit`
+
+Event bodies use `hackathon_research.events` column names (`event_name`, `organizer_name`, `operational_status`, `evidence_confidence`, `event_start_date`, `registration_deadline_at`, and the support enums). Identity is `event_id`.
+
+Child routes, all under the existing `/api/hackathons` proxy:
+
+| Method | Path |
+|--------|------|
+| GET, POST | `/api/hackathons/categories` |
+| GET, POST | `/api/hackathons/team-members` |
+| GET, POST | `/api/hackathons/contributions` |
+| GET, POST | `/api/hackathons/:id/sources` |
+| GET, POST | `/api/hackathons/:id/tracks` |
+| GET, POST | `/api/hackathons/:id/benefits` |
+| GET, POST | `/api/hackathons/:id/milestones` |
+| GET, POST | `/api/hackathons/:id/categories` |
+| GET, PUT | `/api/hackathons/:id/shortlist` |
+| GET, POST | `/api/hackathons/:id/requirements` |
+| PATCH | `/api/hackathons/:id/requirements/:requirementId` |
+| GET, POST | `/api/hackathons/:id/verifications` |
 
 ## Organizer follow-ups
 
@@ -80,11 +102,15 @@ Each gateway request writes one JSON line with `requestId`, method, path, status
 
 ## Verification rules (summary)
 
-These rules are checked by the API and by database constraints in `supabase/migrations/20261019120000_table_rules_and_comments.sql`.
+The live tables are `hackathon_research` in `supabase/migrations/20261020180000_hackathon_research.sql`.
 
-- Verified statuses require evidence links, verifier ≠ researcher, confidence ≠ Low.
-- Shortlist requires `shortlist_rationale`.
-- A follow-up cannot store `confirmed_answer` while `response_status` is Pending.
-- Duplicate `official_website` returns HTTP 409. Matching ignores case and a trailing slash.
+- `event_end_date` is on or after `event_start_date`.
+- `team_size_max` is greater than or equal to `team_size_min`.
+- `registration_fee_amount` is zero or greater, and `registration_fee_currency` is a three-letter uppercase code.
+- An event cannot be `duplicate_of_event_id` of itself.
+- A second event with the same name, start date, city, and country returns HTTP 409.
+- Shortlist rows require `why_practical`. Apply Now is `queue_type = apply_now` on `shortlist_entries`.
+- A follow-up cannot store `confirmed_answer` while `response_status` is `draft`.
+- Follow-up statuses are `draft`, `sent`, `responded`, `closed`, and `no_response`.
 
 See `docs/RESEARCH-SOP.md` for human research standards.

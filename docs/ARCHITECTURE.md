@@ -31,7 +31,7 @@
 
 ## Database rules
 
-`supabase/migrations/20261019120000_table_rules_and_comments.sql` adds column descriptions plus checks for verified rows, shortlist rationale, evidence links, and pending follow-ups. The unique website index uses the same normalization as the API.
+The hackathon service uses schema `hackathon_research` from `supabase/migrations/20261020180000_hackathon_research.sql`: `events` plus sources, tracks, benefits, milestones, categories, shortlist entries, application requirements, follow-ups, verifications, and team members. Queue endpoints read the SQL views (`v_apply_now_queue`, `v_codyza_shortlist`, and the rest). `public.hackathons` is the retired flat table.
 
 ## Hackathon service (`services/hackathon-service/`)
 

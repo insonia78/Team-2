@@ -1,16 +1,22 @@
 import { z } from "zod";
 
+import { memberIdSchema, responseStatusSchema, timestampSchema } from "./enums.js";
+
 export const followupCreateSchema = z.object({
-  hackathon_id: z.string().uuid().optional(),
-  event_name: z.string().min(1),
-  question: z.string().min(1),
-  contact_channel: z.string().optional(),
-  assigned_member: z.string().optional(),
-  sent_date: z.string().date().optional(),
-  response_status: z
-    .enum(["Pending", "Sent", "Replied", "No response", "Closed"])
-    .default("Pending"),
-  confirmed_answer: z.string().optional(),
+  event_id: memberIdSchema,
+  question_text: z.string().min(1),
+  contact_channel: z.string().nullable().optional(),
+  contact_target: z.string().nullable().optional(),
+  sent_at: timestampSchema.nullable().optional(),
+  assigned_member_id: memberIdSchema.nullable().optional(),
+  response_status: responseStatusSchema.default("draft"),
+  confirmed_answer: z.string().nullable().optional(),
+  answered_at: timestampSchema.nullable().optional(),
+  evidence_source_id: memberIdSchema.nullable().optional(),
+  notes: z.string().nullable().optional(),
 });
 
 export const followupUpdateSchema = followupCreateSchema.partial();
+
+export type FollowupCreateInput = z.infer<typeof followupCreateSchema>;
+export type FollowupUpdateInput = z.infer<typeof followupUpdateSchema>;

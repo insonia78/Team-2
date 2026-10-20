@@ -8,6 +8,7 @@ const pool = new pg.Pool({
   connectionString: env.DATABASE_URL,
   max: env.DB_POOL_MAX,
   ssl: env.DATABASE_SSL ? { rejectUnauthorized: false } : undefined,
+  options: "-c search_path=hackathon_research,public",
 });
 
 export const db = drizzle(pool, { schema });

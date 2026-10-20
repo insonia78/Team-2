@@ -1,183 +1,190 @@
-import type { HackathonInsert, HackathonRow, OrganizerFollowupRow } from "./schema.js";
-import type { HackathonCreateInput, HackathonUpdateInput } from "../schemas/hackathon.js";
+import type { EventInsert, FollowUpInsert } from "./schema.js";
+import type { EventCreateInput, EventUpdateInput } from "../schemas/hackathon.js";
+import type { FollowupCreateInput, FollowupUpdateInput } from "../schemas/followup.js";
 
-export function toHackathonInsert(payload: HackathonCreateInput): HackathonInsert {
+export function toApiRecord(row: object): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(row)) {
+    const snake = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+    out[snake] = value;
+  }
+  return out;
+}
+
+function fee(value: number | null | undefined): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  return value.toFixed(2);
+}
+
+export function toEventInsert(payload: EventCreateInput): EventInsert {
   return {
     eventName: payload.event_name,
+    organizerName: payload.organizer_name,
+    hostEntity: payload.host_entity,
     officialWebsite: payload.official_website,
-    organizer: payload.organizer,
     registrationLink: payload.registration_link,
-    rulesFaqUrl: payload.rules_faq_url,
+    rulesFaqLink: payload.rules_faq_link,
+    officialDomain: payload.official_domain,
+    registrationPlatform: payload.registration_platform,
     city: payload.city,
     stateRegion: payload.state_region,
     country: payload.country,
     venue: payload.venue,
     format: payload.format,
-    eventStart: payload.event_start,
-    eventEnd: payload.event_end,
-    registrationDeadline: payload.registration_deadline
-      ? new Date(payload.registration_deadline)
-      : undefined,
+    eventStartDate: payload.event_start_date,
+    eventEndDate: payload.event_end_date,
+    eventTimezone: payload.event_timezone,
+    registrationDeadlineAt: payload.registration_deadline_at,
     registrationStatus: payload.registration_status,
-    lastVerifiedDate: payload.last_verified_date,
+    acceptanceDate: payload.acceptance_date,
+    waitlistInformation: payload.waitlist_information,
+    lastVerifiedAt: payload.last_verified_at,
     studentEligibility: payload.student_eligibility,
     outsideSchoolEligibility: payload.outside_school_eligibility,
     internationalStudentWording: payload.international_student_wording,
     ageRules: payload.age_rules,
-    teamSize: payload.team_size,
-    soloTeamFormationRules: payload.solo_team_formation_rules,
-    registrationFee: payload.registration_fee,
+    geographicRestrictions: payload.geographic_restrictions,
+    invitationRequirements: payload.invitation_requirements,
+    teamSizeMin: payload.team_size_min,
+    teamSizeMax: payload.team_size_max,
+    soloParticipationPolicy: payload.solo_participation_policy,
+    teamFormationRules: payload.team_formation_rules,
+    allMembersMustRegister: payload.all_members_must_register,
+    registrationFeeAmount: fee(payload.registration_fee_amount),
+    registrationFeeCurrency: payload.registration_fee_currency,
+    registrationFeeNotes: payload.registration_fee_notes,
     travelSupport: payload.travel_support,
-    lodging: payload.lodging,
-    meals: payload.meals,
+    lodgingSupport: payload.lodging_support,
+    mealsSupport: payload.meals_support,
+    localTransportSupport: payload.local_transport_support,
+    travelSupportNotes: payload.travel_support_notes,
     reimbursementConditions: payload.reimbursement_conditions,
-    technicalTracks: payload.technical_tracks,
-    aiPolicy: payload.ai_policy,
-    preExistingCodePolicy: payload.pre_existing_code_policy,
-    ipTerms: payload.ip_terms,
+    expensesPaidUpfront: payload.expenses_paid_upfront,
     judgingCriteria: payload.judging_criteria,
-    prizes: payload.prizes,
-    sponsorRecruitingBenefits: payload.sponsor_recruiting_benefits,
+    submissionFormat: payload.submission_format,
+    projectStartRules: payload.project_start_rules,
+    preExistingCodePolicy: payload.pre_existing_code_policy,
+    aiToolPolicy: payload.ai_tool_policy,
+    openSourceRules: payload.open_source_rules,
+    dataRestrictions: payload.data_restrictions,
+    demoVideoRequirements: payload.demo_video_requirements,
+    intellectualPropertyTerms: payload.intellectual_property_terms,
     applicationRequirements: payload.application_requirements,
-    organizerContact: payload.organizer_contact,
-    evidenceLinks: payload.evidence_links,
+    organizerContactSummary: payload.organizer_contact_summary,
     unresolvedQuestions: payload.unresolved_questions,
-    researcherName: payload.researcher_name,
-    verifierName: payload.verifier_name,
-    status: payload.status,
-    confidence: payload.confidence,
-    isShortlisted: payload.is_shortlisted,
-    shortlistRationale: payload.shortlist_rationale,
+    legitimacyNotes: payload.legitimacy_notes,
+    riskFlags: payload.risk_flags,
+    operationalStatus: payload.operational_status,
+    evidenceConfidence: payload.evidence_confidence,
+    nextAction: payload.next_action,
+    primaryResearcherId: payload.primary_researcher_id,
+    verifierId: payload.verifier_id,
+    duplicateOfEventId: payload.duplicate_of_event_id,
   };
 }
 
-export function toHackathonUpdate(patch: HackathonUpdateInput): Partial<HackathonInsert> {
-  const update: Partial<HackathonInsert> = {};
-  if (patch.event_name !== undefined) update.eventName = patch.event_name;
-  if (patch.official_website !== undefined) update.officialWebsite = patch.official_website;
-  if (patch.organizer !== undefined) update.organizer = patch.organizer;
-  if (patch.registration_link !== undefined) update.registrationLink = patch.registration_link;
-  if (patch.rules_faq_url !== undefined) update.rulesFaqUrl = patch.rules_faq_url;
-  if (patch.city !== undefined) update.city = patch.city;
-  if (patch.state_region !== undefined) update.stateRegion = patch.state_region;
-  if (patch.country !== undefined) update.country = patch.country;
-  if (patch.venue !== undefined) update.venue = patch.venue;
-  if (patch.format !== undefined) update.format = patch.format;
-  if (patch.event_start !== undefined) update.eventStart = patch.event_start;
-  if (patch.event_end !== undefined) update.eventEnd = patch.event_end;
-  if (patch.registration_deadline !== undefined) {
-    update.registrationDeadline = new Date(patch.registration_deadline);
+export function toEventUpdate(patch: EventUpdateInput): Partial<EventInsert> {
+  const update: Partial<EventInsert> = { updatedAt: new Date().toISOString() };
+  const assign = <K extends keyof EventInsert>(key: K, value: EventInsert[K] | undefined) => {
+    if (value !== undefined) update[key] = value;
+  };
+
+  assign("eventName", patch.event_name);
+  assign("organizerName", patch.organizer_name);
+  assign("hostEntity", patch.host_entity);
+  assign("officialWebsite", patch.official_website);
+  assign("registrationLink", patch.registration_link);
+  assign("rulesFaqLink", patch.rules_faq_link);
+  assign("officialDomain", patch.official_domain);
+  assign("registrationPlatform", patch.registration_platform);
+  assign("city", patch.city);
+  assign("stateRegion", patch.state_region);
+  assign("country", patch.country);
+  assign("venue", patch.venue);
+  assign("format", patch.format);
+  assign("eventStartDate", patch.event_start_date);
+  assign("eventEndDate", patch.event_end_date);
+  assign("eventTimezone", patch.event_timezone);
+  assign("registrationDeadlineAt", patch.registration_deadline_at);
+  assign("registrationStatus", patch.registration_status);
+  assign("acceptanceDate", patch.acceptance_date);
+  assign("waitlistInformation", patch.waitlist_information);
+  assign("lastVerifiedAt", patch.last_verified_at);
+  assign("studentEligibility", patch.student_eligibility);
+  assign("outsideSchoolEligibility", patch.outside_school_eligibility);
+  assign("internationalStudentWording", patch.international_student_wording);
+  assign("ageRules", patch.age_rules);
+  assign("geographicRestrictions", patch.geographic_restrictions);
+  assign("invitationRequirements", patch.invitation_requirements);
+  assign("teamSizeMin", patch.team_size_min);
+  assign("teamSizeMax", patch.team_size_max);
+  assign("soloParticipationPolicy", patch.solo_participation_policy);
+  assign("teamFormationRules", patch.team_formation_rules);
+  assign("allMembersMustRegister", patch.all_members_must_register);
+  if (patch.registration_fee_amount !== undefined) {
+    update.registrationFeeAmount = fee(patch.registration_fee_amount);
   }
-  if (patch.registration_status !== undefined) update.registrationStatus = patch.registration_status;
-  if (patch.last_verified_date !== undefined) update.lastVerifiedDate = patch.last_verified_date;
-  if (patch.student_eligibility !== undefined) update.studentEligibility = patch.student_eligibility;
-  if (patch.outside_school_eligibility !== undefined) {
-    update.outsideSchoolEligibility = patch.outside_school_eligibility;
-  }
-  if (patch.international_student_wording !== undefined) {
-    update.internationalStudentWording = patch.international_student_wording;
-  }
-  if (patch.age_rules !== undefined) update.ageRules = patch.age_rules;
-  if (patch.team_size !== undefined) update.teamSize = patch.team_size;
-  if (patch.solo_team_formation_rules !== undefined) {
-    update.soloTeamFormationRules = patch.solo_team_formation_rules;
-  }
-  if (patch.registration_fee !== undefined) update.registrationFee = patch.registration_fee;
-  if (patch.travel_support !== undefined) update.travelSupport = patch.travel_support;
-  if (patch.lodging !== undefined) update.lodging = patch.lodging;
-  if (patch.meals !== undefined) update.meals = patch.meals;
-  if (patch.reimbursement_conditions !== undefined) {
-    update.reimbursementConditions = patch.reimbursement_conditions;
-  }
-  if (patch.technical_tracks !== undefined) update.technicalTracks = patch.technical_tracks;
-  if (patch.ai_policy !== undefined) update.aiPolicy = patch.ai_policy;
-  if (patch.pre_existing_code_policy !== undefined) {
-    update.preExistingCodePolicy = patch.pre_existing_code_policy;
-  }
-  if (patch.ip_terms !== undefined) update.ipTerms = patch.ip_terms;
-  if (patch.judging_criteria !== undefined) update.judgingCriteria = patch.judging_criteria;
-  if (patch.prizes !== undefined) update.prizes = patch.prizes;
-  if (patch.sponsor_recruiting_benefits !== undefined) {
-    update.sponsorRecruitingBenefits = patch.sponsor_recruiting_benefits;
-  }
-  if (patch.application_requirements !== undefined) {
-    update.applicationRequirements = patch.application_requirements;
-  }
-  if (patch.organizer_contact !== undefined) update.organizerContact = patch.organizer_contact;
-  if (patch.evidence_links !== undefined) update.evidenceLinks = patch.evidence_links;
-  if (patch.unresolved_questions !== undefined) update.unresolvedQuestions = patch.unresolved_questions;
-  if (patch.researcher_name !== undefined) update.researcherName = patch.researcher_name;
-  if (patch.verifier_name !== undefined) update.verifierName = patch.verifier_name;
-  if (patch.status !== undefined) update.status = patch.status;
-  if (patch.confidence !== undefined) update.confidence = patch.confidence;
-  if (patch.is_shortlisted !== undefined) update.isShortlisted = patch.is_shortlisted;
-  if (patch.shortlist_rationale !== undefined) update.shortlistRationale = patch.shortlist_rationale;
+  assign("registrationFeeCurrency", patch.registration_fee_currency);
+  assign("registrationFeeNotes", patch.registration_fee_notes);
+  assign("travelSupport", patch.travel_support);
+  assign("lodgingSupport", patch.lodging_support);
+  assign("mealsSupport", patch.meals_support);
+  assign("localTransportSupport", patch.local_transport_support);
+  assign("travelSupportNotes", patch.travel_support_notes);
+  assign("reimbursementConditions", patch.reimbursement_conditions);
+  assign("expensesPaidUpfront", patch.expenses_paid_upfront);
+  assign("judgingCriteria", patch.judging_criteria);
+  assign("submissionFormat", patch.submission_format);
+  assign("projectStartRules", patch.project_start_rules);
+  assign("preExistingCodePolicy", patch.pre_existing_code_policy);
+  assign("aiToolPolicy", patch.ai_tool_policy);
+  assign("openSourceRules", patch.open_source_rules);
+  assign("dataRestrictions", patch.data_restrictions);
+  assign("demoVideoRequirements", patch.demo_video_requirements);
+  assign("intellectualPropertyTerms", patch.intellectual_property_terms);
+  assign("applicationRequirements", patch.application_requirements);
+  assign("organizerContactSummary", patch.organizer_contact_summary);
+  assign("unresolvedQuestions", patch.unresolved_questions);
+  assign("legitimacyNotes", patch.legitimacy_notes);
+  assign("riskFlags", patch.risk_flags);
+  assign("operationalStatus", patch.operational_status);
+  assign("evidenceConfidence", patch.evidence_confidence);
+  assign("nextAction", patch.next_action);
+  assign("primaryResearcherId", patch.primary_researcher_id);
+  assign("verifierId", patch.verifier_id);
+  assign("duplicateOfEventId", patch.duplicate_of_event_id);
   return update;
 }
 
-export function hackathonToApi(row: HackathonRow) {
+export function toFollowUpInsert(payload: FollowupCreateInput): FollowUpInsert {
   return {
-    id: row.id,
-    created_at: row.createdAt,
-    updated_at: row.updatedAt,
-    event_name: row.eventName,
-    organizer: row.organizer,
-    official_website: row.officialWebsite,
-    registration_link: row.registrationLink,
-    rules_faq_url: row.rulesFaqUrl,
-    city: row.city,
-    state_region: row.stateRegion,
-    country: row.country,
-    venue: row.venue,
-    format: row.format,
-    event_start: row.eventStart,
-    event_end: row.eventEnd,
-    registration_deadline: row.registrationDeadline,
-    registration_status: row.registrationStatus,
-    last_verified_date: row.lastVerifiedDate,
-    student_eligibility: row.studentEligibility,
-    outside_school_eligibility: row.outsideSchoolEligibility,
-    international_student_wording: row.internationalStudentWording,
-    age_rules: row.ageRules,
-    team_size: row.teamSize,
-    solo_team_formation_rules: row.soloTeamFormationRules,
-    registration_fee: row.registrationFee,
-    travel_support: row.travelSupport,
-    lodging: row.lodging,
-    meals: row.meals,
-    reimbursement_conditions: row.reimbursementConditions,
-    technical_tracks: row.technicalTracks,
-    ai_policy: row.aiPolicy,
-    pre_existing_code_policy: row.preExistingCodePolicy,
-    ip_terms: row.ipTerms,
-    judging_criteria: row.judgingCriteria,
-    prizes: row.prizes,
-    sponsor_recruiting_benefits: row.sponsorRecruitingBenefits,
-    application_requirements: row.applicationRequirements,
-    organizer_contact: row.organizerContact,
-    evidence_links: row.evidenceLinks,
-    unresolved_questions: row.unresolvedQuestions,
-    researcher_name: row.researcherName,
-    verifier_name: row.verifierName,
-    status: row.status,
-    confidence: row.confidence,
-    is_shortlisted: row.isShortlisted,
-    shortlist_rationale: row.shortlistRationale,
+    eventId: payload.event_id,
+    questionText: payload.question_text,
+    contactChannel: payload.contact_channel,
+    contactTarget: payload.contact_target,
+    sentAt: payload.sent_at,
+    assignedMemberId: payload.assigned_member_id,
+    responseStatus: payload.response_status,
+    confirmedAnswer: payload.confirmed_answer,
+    answeredAt: payload.answered_at,
+    evidenceSourceId: payload.evidence_source_id,
+    notes: payload.notes,
   };
 }
 
-export function followupToApi(row: OrganizerFollowupRow) {
-  return {
-    id: row.id,
-    created_at: row.createdAt,
-    updated_at: row.updatedAt,
-    hackathon_id: row.hackathonId,
-    event_name: row.eventName,
-    question: row.question,
-    contact_channel: row.contactChannel,
-    assigned_member: row.assignedMember,
-    sent_date: row.sentDate,
-    response_status: row.responseStatus,
-    confirmed_answer: row.confirmedAnswer,
-  };
+export function toFollowUpUpdate(patch: FollowupUpdateInput): Partial<FollowUpInsert> {
+  const update: Partial<FollowUpInsert> = {};
+  if (patch.event_id !== undefined) update.eventId = patch.event_id;
+  if (patch.question_text !== undefined) update.questionText = patch.question_text;
+  if (patch.contact_channel !== undefined) update.contactChannel = patch.contact_channel;
+  if (patch.contact_target !== undefined) update.contactTarget = patch.contact_target;
+  if (patch.sent_at !== undefined) update.sentAt = patch.sent_at;
+  if (patch.assigned_member_id !== undefined) update.assignedMemberId = patch.assigned_member_id;
+  if (patch.response_status !== undefined) update.responseStatus = patch.response_status;
+  if (patch.confirmed_answer !== undefined) update.confirmedAnswer = patch.confirmed_answer;
+  if (patch.answered_at !== undefined) update.answeredAt = patch.answered_at;
+  if (patch.evidence_source_id !== undefined) update.evidenceSourceId = patch.evidence_source_id;
+  if (patch.notes !== undefined) update.notes = patch.notes;
+  return update;
 }

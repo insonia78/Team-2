@@ -25,7 +25,7 @@ See root `.env.example`, `gateway/.env.example` (if present), `services/hackatho
 
 **Gateway:** `HACKATHON_SERVICE_URL`, `PORT`, `ADMIN_API_KEY` (no database credentials). Optional `LOG_FILE_PATH` for a local JSON log file. Leave it unset in containers.
 
-Apply `supabase/migrations/20261019120000_table_rules_and_comments.sql` after the two earlier migrations. It adds column comments and the research-rule checks.
+Apply `supabase/migrations/20261020180000_hackathon_research.sql` after the earlier migrations. The API reads and writes schema `hackathon_research`. The earlier `public.hackathons` scripts are the retired flat table.
 
 **Hackathon service:** `DATABASE_URL`, `DATABASE_SSL` (standard PostgreSQL; Supabase is optional hosting only).
 

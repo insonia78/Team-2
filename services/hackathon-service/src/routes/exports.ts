@@ -1,20 +1,22 @@
-import { asc, eq } from "drizzle-orm";
+import { asc } from "drizzle-orm";
 import type { FastifyPluginAsync } from "fastify";
 
 import { db } from "../db/client.js";
-import { followupToApi, hackathonToApi } from "../db/mappers.js";
-import { hackathons, organizerFollowups } from "../db/schema.js";
+import { toApiRecord } from "../db/mappers.js";
+import { codyzaShortlist, events, organizerFollowUps } from "../db/schema.js";
 import { toCsv } from "../lib/csv.js";
+
+function sendCsv(reply: { header: (name: string, value: string) => void }, filename: string, rows: object[]) {
+  reply.header("Content-Type", "text/csv; charset=utf-8");
+  reply.header("Content-Disposition", `attachment; filename="${filename}"`);
+  return toCsv(rows.map(toApiRecord));
+}
 
 export const exportRoutes: FastifyPluginAsync = async (app) => {
   app.get("/api/exports/master-database.csv", async (request, reply) => {
     try {
-      const rows = await db.select().from(hackathons).orderBy(asc(hackathons.eventName));
-      const data = rows.map(hackathonToApi);
-
-      reply.header("Content-Type", "text/csv; charset=utf-8");
-      reply.header("Content-Disposition", 'attachment; filename="master-hackathon-database.csv"');
-      return toCsv(data);
+      const rows = await db.select().from(events).orderBy(asc(events.eventName));
+      return sendCsv(reply, "master-hackathon-database.csv", rows);
     } catch (error) {
       request.log.error({ err: error, requestId: request.id }, "failed to export master database");
       return reply.code(500).send({ error: "Failed to export master database." });
@@ -23,16 +25,8 @@ export const exportRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/api/exports/shortlist.csv", async (request, reply) => {
     try {
-      const rows = await db
-        .select()
-        .from(hackathons)
-        .where(eq(hackathons.isShortlisted, true))
-        .orderBy(asc(hackathons.registrationDeadline));
-      const data = rows.map(hackathonToApi);
-
-      reply.header("Content-Type", "text/csv; charset=utf-8");
-      reply.header("Content-Disposition", 'attachment; filename="codyza-shortlist.csv"');
-      return toCsv(data);
+      const rows = await db.select().from(codyzaShortlist);
+      return sendCsv(reply, "codyza-shortlist.csv", rows);
     } catch (error) {
       request.log.error({ err: error, requestId: request.id }, "failed to export shortlist");
       return reply.code(500).send({ error: "Failed to export shortlist." });
@@ -41,15 +35,8 @@ export const exportRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/api/exports/organizer-followups.csv", async (request, reply) => {
     try {
-      const rows = await db.select().from(organizerFollowups).orderBy(asc(organizerFollowups.sentDate));
-      const data = rows.map(followupToApi);
-
-      reply.header("Content-Type", "text/csv; charset=utf-8");
-      reply.header(
-        "Content-Disposition",
-        'attachment; filename="organizer-followup-log.csv"',
-      );
-      return toCsv(data);
+      const rows = await db.select().from(organizerFollowUps).orderBy(asc(organizerFollowUps.sentAt));
+      return sendCsv(reply, "organizer-followup-log.csv", rows);
     } catch (error) {
       request.log.error({ err: error, requestId: request.id }, "failed to export organizer follow-ups");
       return reply.code(500).send({ error: "Failed to export organizer follow-ups." });
