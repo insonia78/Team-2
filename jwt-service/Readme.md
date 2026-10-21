@@ -1,6 +1,6 @@
 # JWT service
 
-Signs HS256 tokens after a local password check or a Codyza LDAP bind, stores the token id and claim hash in `auth.jwt_tokens`, and checks both on `POST /verify`. The account role in `auth.app_users` has to match the token. The raw JWT is not stored.
+Signs HS256 tokens after a local password check or a Codyza LDAP bind, stores the token id and claim hash in `app_auth.jwt_tokens`, and checks both on `POST /verify`. The account role in `app_auth.app_users` has to match the token. The raw JWT is not stored.
 
 The gateway is the only caller. `POST /login`, `POST /verify`, `POST /logout`, `POST /users/:id/revoke-sessions`, `POST /invitations`, and `POST /invitations/accept` require `X-Gateway-Caller: team-2-gateway` and `X-Gateway-Secret`. Health routes stay open. The signing secret stays in this service. An admin invitation stores only a hash of the one-time token and asks the mail service to send the link. Accepting it creates a local account and signs a token.
 

@@ -35,13 +35,13 @@
 
 The hackathon service uses schema `hackathon_research` from `supabase/migrations/20261020180000_hackathon_research.sql`: `events` plus sources, tracks, benefits, milestones, categories, shortlist entries, application requirements, follow-ups, verifications, and team members. Queue endpoints read the SQL views (`v_apply_now_queue`, `v_codyza_shortlist`, and the rest). `public.hackathons` is the retired flat table. Point `DATABASE_URL` at the scraper project that holds this schema.
 
-Login accounts, invitations, and issued tokens live in schema `auth` on the auth project (`supabase/auth/001_auth.sql`). `jwt-service` reaches them through `AUTH_DATABASE_URL` (it falls back to `DATABASE_URL` when that variable is unset). Invitation links store only a token hash. Issued access tokens store `token_id`, a SHA-256 of the claims, user, role, issuer, and timestamps. The raw JWT is not stored.
+Login accounts, invitations, and issued tokens live in schema `app_auth` on the auth project (`supabase/auth/001_auth.sql`). Supabase already owns a schema named `auth`, so these tables are not created there. `jwt-service` reaches them through `AUTH_DATABASE_URL` (it falls back to `DATABASE_URL` when that variable is unset). Invitation links store only a token hash. Issued access tokens store `token_id`, a SHA-256 of the claims, user, role, issuer, and timestamps. The raw JWT is not stored.
 
 ## JWT service (`jwt-service/`)
 
-- `POST /login` checks a local password, or Codyza LDAP when `LDAP_URL` is set, then writes `auth.jwt_tokens` and signs the token
+- `POST /login` checks a local password, or Codyza LDAP when `LDAP_URL` is set, then writes `app_auth.jwt_tokens` and signs the token
 - `POST /invitations` stores a one-time invite for an admin and asks the Python mail service to send the link. `POST /invitations/accept` creates the local account and signs the same kind of token
-- `POST /verify` checks HS256, the issuer, and the expiry, then requires the token row and `auth.app_users` role to match the claims
+- `POST /verify` checks HS256, the issuer, and the expiry, then requires the token row and `app_auth.app_users` role to match the claims
 - `POST /logout` revokes that token. `POST /users/:id/revoke-sessions` revokes every active token for one account and requires an admin
 - Accepts calls only from the gateway (`X-Gateway-Caller` / `X-Gateway-Secret`)
 - Health routes stay open so the gateway readiness check can reach them

@@ -75,7 +75,7 @@ export function createPgInvitationStore(pool: pg.Pool): InvitationStore {
       try {
         await client.query("begin");
         await client.query(lockEmail, [input.email]);
-        const existing = await client.query("select id from auth.app_users where email = $1", [
+        const existing = await client.query("select id from app_auth.app_users where email = $1", [
           input.email,
         ]);
         if ((existing.rowCount ?? 0) > 0) {
@@ -84,13 +84,13 @@ export function createPgInvitationStore(pool: pg.Pool): InvitationStore {
         }
 
         await client.query(
-          `update auth.invitations
+          `update app_auth.invitations
            set used_at = now()
            where email = $1 and used_at is null`,
           [input.email],
         );
         const inserted = await client.query<InvitationRow>(
-          `insert into auth.invitations (email, role, token_hash, expires_at, invited_by)
+          `insert into app_auth.invitations (email, role, token_hash, expires_at, invited_by)
            values ($1, $2, $3, $4, $5)
            returning id, email, role, expires_at, used_at`,
           [input.email, input.role, input.tokenHash, input.expiresAt, input.invitedBy],
@@ -115,7 +115,7 @@ export function createPgInvitationStore(pool: pg.Pool): InvitationStore {
         await client.query("begin");
         const found = await client.query<InvitationRow>(
           `select id, email, role, expires_at, used_at
-           from auth.invitations
+           from app_auth.invitations
            where token_hash = $1`,
           [input.tokenHash],
         );
@@ -128,7 +128,7 @@ export function createPgInvitationStore(pool: pg.Pool): InvitationStore {
         await client.query(lockEmail, [preview.email]);
         const locked = await client.query<InvitationRow>(
           `select id, email, role, expires_at, used_at
-           from auth.invitations
+           from app_auth.invitations
            where id = $1
            for update`,
           [preview.id],
@@ -139,7 +139,7 @@ export function createPgInvitationStore(pool: pg.Pool): InvitationStore {
           return { status: "invalid" };
         }
 
-        const existing = await client.query("select id from auth.app_users where email = $1", [
+        const existing = await client.query("select id from app_auth.app_users where email = $1", [
           current.email,
         ]);
         if ((existing.rowCount ?? 0) > 0) {
@@ -153,12 +153,12 @@ export function createPgInvitationStore(pool: pg.Pool): InvitationStore {
         }
 
         const inserted = await client.query<UserRow>(
-          `insert into auth.app_users (email, password_hash, role, auth_source)
+          `insert into app_auth.app_users (email, password_hash, role, auth_source)
            values ($1, $2, $3, 'local')
            returning id, email, password_hash, role, auth_source, ldap_dn`,
           [current.email, input.passwordHash, current.role],
         );
-        await client.query("update auth.invitations set used_at = $2 where id = $1", [
+        await client.query("update app_auth.invitations set used_at = $2 where id = $1", [
           current.id,
           input.now,
         ]);

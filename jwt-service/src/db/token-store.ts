@@ -89,7 +89,7 @@ export function createPgTokenStore(pool: pg.Pool): TokenStore {
   return {
     async save(record) {
       await pool.query(
-        `insert into auth.jwt_tokens (
+        `insert into app_auth.jwt_tokens (
            token_id, token_sha, user_id, role, issuer, issued_at, expires_at, revoked_at
          ) values ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [
@@ -106,14 +106,14 @@ export function createPgTokenStore(pool: pg.Pool): TokenStore {
     },
     async findById(tokenId) {
       const result = await pool.query<TokenRow>(
-        `select ${tokenColumns} from auth.jwt_tokens where token_id = $1`,
+        `select ${tokenColumns} from app_auth.jwt_tokens where token_id = $1`,
         [tokenId],
       );
       return mapToken(result.rows[0]);
     },
     async revoke(tokenId, revokedAt = unixNow()) {
       const result = await pool.query<TokenRow>(
-        `update auth.jwt_tokens
+        `update app_auth.jwt_tokens
          set revoked_at = $2
          where token_id = $1 and revoked_at is null
          returning ${tokenColumns}`,
@@ -123,7 +123,7 @@ export function createPgTokenStore(pool: pg.Pool): TokenStore {
     },
     async revokeForUser(userId, revokedAt = unixNow()) {
       const result = await pool.query(
-        `update auth.jwt_tokens
+        `update app_auth.jwt_tokens
          set revoked_at = $2
          where user_id = $1 and revoked_at is null`,
         [userId, revokedAt],
@@ -131,7 +131,7 @@ export function createPgTokenStore(pool: pg.Pool): TokenStore {
       return result.rowCount ?? 0;
     },
     async deleteExpired(olderThan) {
-      const result = await pool.query("delete from auth.jwt_tokens where expires_at < $1", [olderThan]);
+      const result = await pool.query("delete from app_auth.jwt_tokens where expires_at < $1", [olderThan]);
       return result.rowCount ?? 0;
     },
   };

@@ -71,7 +71,7 @@ export function createPgUserDirectory(
 
   async function findByEmail(email: string): Promise<AppUser | null> {
     const result = await pool.query<UserRow>(
-      `select ${userColumns} from auth.app_users where email = $1`,
+      `select ${userColumns} from app_auth.app_users where email = $1`,
       [email],
     );
     return mapUser(result.rows[0]);
@@ -85,7 +85,7 @@ export function createPgUserDirectory(
     ldapDn?: string | null;
   }): Promise<AppUser> {
     const result = await pool.query<UserRow>(
-      `insert into auth.app_users (email, password_hash, role, auth_source, ldap_dn)
+      `insert into app_auth.app_users (email, password_hash, role, auth_source, ldap_dn)
        values ($1, $2, $3, $4, $5)
        on conflict (email) do update
        set password_hash = excluded.password_hash,
@@ -108,7 +108,7 @@ export function createPgUserDirectory(
     findByEmail,
     async findById(id: string) {
       const result = await pool.query<UserRow>(
-        `select ${userColumns} from auth.app_users where id = $1`,
+        `select ${userColumns} from app_auth.app_users where id = $1`,
         [id],
       );
       return mapUser(result.rows[0]);

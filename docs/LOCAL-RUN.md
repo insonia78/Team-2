@@ -25,7 +25,7 @@ PORT=4001
 GATEWAY_INTERNAL_SECRET=local-dev-gateway-secret
 ```
 
-Apply `supabase/auth/001_auth.sql` on the auth project. The hackathon service uses the scraper project's `hackathon_research` schema and does not read `auth.app_users`.
+Apply `supabase/auth/001_auth.sql` on the auth project. The hackathon service uses the scraper project's `hackathon_research` schema and does not read `app_auth.app_users`.
 
 ## 3. JWT service env
 
