@@ -31,6 +31,8 @@ const envSchema = z
     JWT_SECRET: z.string().min(32),
     JWT_ISSUER: z.string().min(1).default("team-2-gateway"),
     JWT_TTL_SECONDS: z.coerce.number().int().positive().default(2 * 60 * 60),
+    INVITE_URL_BASE: z.string().trim().min(1).default("http://localhost:3000/accept-invite"),
+    INVITE_TTL_SECONDS: z.coerce.number().int().positive().default(7 * 24 * 60 * 60),
     GATEWAY_INTERNAL_SECRET: z.string().min(16),
     BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(15).default(12),
 

@@ -25,6 +25,8 @@ describe("gateway routes", () => {
       role: "api-gateway",
       routes: [
         { path: "POST /api/auth/login", upstream: "http://127.0.0.1:4004", access: "public" },
+        { path: "POST /api/auth/invitations", upstream: "http://127.0.0.1:4004", access: "admin" },
+        { path: "POST /api/auth/invitations/accept", upstream: "http://127.0.0.1:4004", access: "public" },
         { path: "GET /api/auth/me", upstream: "gateway", access: "authenticated" },
         { path: "/api/hackathons/*", upstream: "http://127.0.0.1:4001", access: "authenticated" },
         { path: "/api/organizer-followups/*", upstream: "http://127.0.0.1:4001", access: "authenticated" },

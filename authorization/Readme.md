@@ -1,3 +1,3 @@
 # Authorization
 
-The gateway verifies stateless JWTs and enforces `viewer`, `researcher`, and `admin`. Password checks and token signing live in `jwt-service/`. See `docs/API.md`.
+Password checks, invitation links, and token signing live in `jwt-service/`. The gateway asks that service to verify stateless JWTs and enforces `viewer`, `researcher`, and `admin`. See `docs/API.md`.

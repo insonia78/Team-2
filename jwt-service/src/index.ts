@@ -6,6 +6,7 @@ import { applySeedUsers } from "./lib/seed.js";
 const directory = createPgUserDirectory(env);
 const app = await buildApp({
   userStore: directory,
+  invitationStore: directory,
   checkDatabase: () => directory.check(),
 });
 

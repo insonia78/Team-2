@@ -15,6 +15,8 @@ function env(overrides: Partial<JwtEnv> = {}): JwtEnv {
     JWT_SECRET: "test-jwt-secret-at-least-32-characters",
     JWT_ISSUER: "team-2-gateway",
     JWT_TTL_SECONDS: 7200,
+    INVITE_URL_BASE: "http://localhost:3000/accept-invite",
+    INVITE_TTL_SECONDS: 604800,
     GATEWAY_INTERNAL_SECRET: "test-gateway-secret-value",
     BCRYPT_ROUNDS: 4,
     SEED_VIEWER_EMAIL: undefined,

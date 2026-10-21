@@ -33,11 +33,12 @@
 
 ## Database rules
 
-The hackathon service uses schema `hackathon_research` from `supabase/migrations/20261020180000_hackathon_research.sql`: `events` plus sources, tracks, benefits, milestones, categories, shortlist entries, application requirements, follow-ups, verifications, and team members. Queue endpoints read the SQL views (`v_apply_now_queue`, `v_codyza_shortlist`, and the rest). `public.hackathons` is the retired flat table. Login accounts live in `hackathon_research.app_users` from `supabase/migrations/20261021140000_app_users.sql`.
+The hackathon service uses schema `hackathon_research` from `supabase/migrations/20261020180000_hackathon_research.sql`: `events` plus sources, tracks, benefits, milestones, categories, shortlist entries, application requirements, follow-ups, verifications, and team members. Queue endpoints read the SQL views (`v_apply_now_queue`, `v_codyza_shortlist`, and the rest). `public.hackathons` is the retired flat table. Login accounts live in `hackathon_research.app_users` from `supabase/migrations/20261021140000_app_users.sql`. Invitation links live in `hackathon_research.invitations` from `supabase/migrations/20261021180000_invitations.sql`. Only the token hash is stored.
 
 ## JWT service (`jwt-service/`)
 
 - `POST /login` checks `hackathon_research.app_users` and signs the token
+- `POST /invitations` stores a one-time invite for an admin. `POST /invitations/accept` creates the account and signs the same kind of token
 - `POST /verify` checks the signature, issuer, and expiry. It does not read a token table
 - Accepts calls only from the gateway (`X-Gateway-Caller` / `X-Gateway-Secret`)
 - Health routes stay open so the gateway readiness check can reach them

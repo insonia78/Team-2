@@ -2,6 +2,7 @@ import pg from "pg";
 
 import type { JwtEnv } from "../config/env.js";
 import { isRole, type Role } from "../lib/roles.js";
+import { createPgInvitationStore, type InvitationStore } from "./invitations.js";
 
 export type AppUser = {
   id: string;
@@ -27,14 +28,18 @@ type UserRow = {
   role: string;
 };
 
-export function createPgUserDirectory(source: Pick<JwtEnv, "DATABASE_URL" | "DATABASE_SSL">): UserDirectory {
+export function createPgUserDirectory(
+  source: Pick<JwtEnv, "DATABASE_URL" | "DATABASE_SSL">,
+): UserDirectory & InvitationStore {
   const pool = new pg.Pool({
     connectionString: source.DATABASE_URL,
     max: 5,
     ssl: source.DATABASE_SSL ? { rejectUnauthorized: false } : undefined,
   });
+  const invitations = createPgInvitationStore(pool);
 
   return {
+    ...invitations,
     async findByEmail(email: string) {
       const result = await pool.query<UserRow>(
         `select id, email, password_hash, role

@@ -20,6 +20,7 @@ export const logRedact = {
     'req.headers["x-api-key"]',
     'req.headers["x-gateway-secret"]',
     "req.body.password",
+    "req.body.token",
   ],
   remove: true,
 };

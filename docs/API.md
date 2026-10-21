@@ -6,7 +6,7 @@ Base URL (local): `http://localhost:4000`
 
 Stateless HS256 JWTs. The JWT service signs them and checks the signature, issuer (`team-2-gateway`), and expiry. The gateway asks that service before it forwards a protected call. Tokens last 2 hours. Logout is the client discarding the token. `POST /verify` is internal to the gateway.
 
-`POST /api/auth/login` is public.
+`POST /api/auth/login` and `POST /api/auth/invitations/accept` are public. `POST /api/auth/invitations` requires an admin token.
 
 ```json
 { "email": "researcher@local", "password": "change-me-researcher" }
@@ -19,6 +19,14 @@ Stateless HS256 JWTs. The JWT service signs them and checks the signature, issue
   "user": { "id": "<uuid>", "email": "researcher@local", "role": "researcher" }
 }
 ```
+
+An admin invites a person with `POST /api/auth/invitations`. The response includes a one-time `inviteUrl`. That link expires after 7 days. Sending another invite for the same email retires the older unused link.
+
+```json
+{ "email": "new.researcher@example.com", "role": "researcher" }
+```
+
+The invited person calls `POST /api/auth/invitations/accept` with the token from the link and a password of at least 8 characters. The response matches login, and later visits use `POST /api/auth/login`. An unknown, expired, or already used token returns 400 `{ "error": "Invitation is invalid or expired." }`. An email that already has an account returns 409 `{ "error": "An account with this email already exists." }`.
 
 Send `Authorization: Bearer <token>` on later calls. `GET /api/auth/me` returns the same user fields plus `expiresAt`.
 

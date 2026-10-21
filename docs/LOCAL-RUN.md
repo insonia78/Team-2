@@ -25,7 +25,7 @@ PORT=4001
 GATEWAY_INTERNAL_SECRET=local-dev-gateway-secret
 ```
 
-Apply `supabase/migrations/20261021140000_app_users.sql` in the SQL editor after the research schema.
+Apply `supabase/migrations/20261021140000_app_users.sql` in the SQL editor after the research schema, then `supabase/migrations/20261021180000_invitations.sql`.
 
 ## 3. JWT service env
 

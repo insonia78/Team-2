@@ -29,7 +29,7 @@ export function isPublicRoute(method: string, path: string): boolean {
   if (method === "GET" && path === "/gateway/routes") {
     return true;
   }
-  return method === "POST" && path === "/api/auth/login";
+  return method === "POST" && (path === "/api/auth/login" || path === "/api/auth/invitations/accept");
 }
 
 function isProxiedApi(path: string): boolean {

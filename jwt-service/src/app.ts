@@ -3,18 +3,22 @@ import Fastify, { type FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 
 import { env } from "./config/env.js";
+import type { InvitationStore } from "./db/invitations.js";
 import type { UserStore } from "./db/users.js";
 import { authorizeGatewayCaller } from "./lib/gateway-auth.js";
 import { buildFastifyLogger, logCompletedRequest } from "./lib/logger.js";
 import { hashPassword } from "./lib/password.js";
 import { healthRoutes } from "./routes/health.js";
+import { invitationRoutes } from "./routes/invitations.js";
 import { loginRoutes } from "./routes/login.js";
 import { verifyRoutes } from "./routes/verify.js";
 
 export type BuildAppOptions = {
   userStore: UserStore;
+  invitationStore?: InvitationStore;
   checkDatabase?: () => Promise<boolean>;
   dummyPasswordHash?: string;
+  bcryptRounds?: number;
 };
 
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
@@ -53,6 +57,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   await app.register(healthRoutes(options.checkDatabase));
   await app.register(loginRoutes(options.userStore, dummyPasswordHash));
   await app.register(verifyRoutes);
+  await app.register(invitationRoutes(options.invitationStore, options.bcryptRounds ?? env.BCRYPT_ROUNDS));
 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ZodError) {

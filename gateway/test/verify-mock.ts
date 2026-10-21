@@ -5,10 +5,15 @@ import { TEST_JWT_ISSUER, TEST_JWT_SECRET } from "./constants.js";
 
 const encoder = new TextEncoder();
 
-export function stubTokenVerification() {
+export function stubTokenVerification(
+  onOther?: (url: string, init?: RequestInit) => Promise<Response> | Response,
+) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = input instanceof URL ? input.toString() : String(input);
     if (!url.endsWith("/verify")) {
+      if (onOther) {
+        return onOther(url, init);
+      }
       return new Response(JSON.stringify({ error: "unexpected fetch" }), { status: 500 });
     }
 
