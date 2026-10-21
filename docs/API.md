@@ -2,6 +2,36 @@
 
 Base URL (local): `http://localhost:4000`
 
+## Authentication
+
+Stateless HS256 JWTs. The gateway checks the signature, issuer (`team-2-gateway`), and expiry. Tokens last 2 hours. Logout is the client discarding the token.
+
+`POST /api/auth/login` is public.
+
+```json
+{ "email": "researcher@local", "password": "change-me-researcher" }
+```
+
+```json
+{
+  "token": "<jwt>",
+  "expiresAt": "2026-10-21T16:00:00.000Z",
+  "user": { "id": "<uuid>", "email": "researcher@local", "role": "researcher" }
+}
+```
+
+Send `Authorization: Bearer <token>` on later calls. `GET /api/auth/me` returns the same user fields plus `expiresAt`.
+
+| Role | Methods |
+|------|---------|
+| `viewer` | GET, HEAD |
+| `researcher` | viewer, plus POST, PUT, PATCH |
+| `admin` | all methods, including DELETE and `/admin/*` |
+
+A non-admin token cannot call `/admin/*`. Requests with no token can still use `X-Admin-Key` there. `/health`, `/health/live`, `/health/ready`, and `/gateway/routes` stay public.
+
+Unknown emails and wrong passwords both return 401 `{ "error": "Invalid email or password." }`.
+
 ## Health and operations
 
 | Method | Path | Purpose |

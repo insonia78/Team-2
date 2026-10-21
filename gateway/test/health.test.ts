@@ -53,9 +53,10 @@ describe("health routes", () => {
       check: "readiness",
       service: "team-2-gateway",
       role: "api-gateway",
-      downstream: { hackathon_service: "ok" },
+      downstream: { hackathon_service: "ok", jwt_service: "ok" },
     });
     expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:4001/health/ready");
+    expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:4004/health/ready");
   });
 
   it("returns 503 when the hackathon service cannot be reached", async () => {
@@ -75,7 +76,7 @@ describe("health routes", () => {
       check: "readiness",
       service: "team-2-gateway",
       role: "api-gateway",
-      downstream: { hackathon_service: "unavailable" },
+      downstream: { hackathon_service: "unavailable", jwt_service: "unavailable" },
     });
   });
 
@@ -91,7 +92,7 @@ describe("health routes", () => {
     expect(response.statusCode).toBe(503);
     expect(response.json()).toMatchObject({
       ok: false,
-      downstream: { hackathon_service: "unavailable" },
+      downstream: { hackathon_service: "unavailable", jwt_service: "unavailable" },
     });
   });
 });

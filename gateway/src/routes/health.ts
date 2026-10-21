@@ -31,21 +31,24 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
   }));
 
   app.get("/health/ready", async (request, reply) => {
-    const hackathonOk = await checkDownstream(env.HACKATHON_SERVICE_URL);
+    const [hackathonOk, jwtOk] = await Promise.all([
+      checkDownstream(env.HACKATHON_SERVICE_URL),
+      checkDownstream(env.JWT_SERVICE_URL),
+    ]);
 
-    if (!hackathonOk) {
-      request.log.warn(
-        { downstream: "hackathon-service", requestId: request.id },
-        "readiness check failed",
-      );
+    const downstream = {
+      hackathon_service: hackathonOk ? "ok" : "unavailable",
+      jwt_service: jwtOk ? "ok" : "unavailable",
+    };
+
+    if (!hackathonOk || !jwtOk) {
+      request.log.warn({ downstream, requestId: request.id }, "readiness check failed");
       return reply.code(503).send({
         ok: false,
         check: "readiness",
         service: env.SERVICE_NAME,
         role: "api-gateway",
-        downstream: {
-          hackathon_service: "unavailable",
-        },
+        downstream,
       });
     }
 
@@ -54,9 +57,7 @@ export const healthRoutes: FastifyPluginAsync = async (app) => {
       check: "readiness",
       service: env.SERVICE_NAME,
       role: "api-gateway",
-      downstream: {
-        hackathon_service: "ok",
-      },
+      downstream,
     };
   });
 };

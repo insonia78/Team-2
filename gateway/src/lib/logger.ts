@@ -18,6 +18,8 @@ export const logRedact = {
     "req.headers.authorization",
     'req.headers["x-admin-key"]',
     'req.headers["x-api-key"]',
+    'req.headers["x-gateway-secret"]',
+    "req.body.password",
   ],
   remove: true,
 };

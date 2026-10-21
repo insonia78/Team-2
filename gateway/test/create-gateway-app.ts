@@ -3,6 +3,8 @@ import type { Writable } from "node:stream";
 import type { FastifyInstance } from "fastify";
 import { vi } from "vitest";
 
+import { TEST_GATEWAY_SECRET, TEST_JWT_ISSUER, TEST_JWT_SECRET } from "./constants.js";
+
 const GATEWAY_ENV_KEYS = [
   "NODE_ENV",
   "PORT",
@@ -10,8 +12,12 @@ const GATEWAY_ENV_KEYS = [
   "LOG_LEVEL",
   "LOG_FILE_PATH",
   "HACKATHON_SERVICE_URL",
+  "JWT_SERVICE_URL",
   "AI_SERVICE_URL",
   "SCRAPER_SERVICE_URL",
+  "JWT_SECRET",
+  "JWT_ISSUER",
+  "GATEWAY_INTERNAL_SECRET",
   "ADMIN_API_KEY",
   "IP_ALLOWLIST",
   "IP_BLOCKLIST",
@@ -38,6 +44,10 @@ export async function createGatewayApp(
     SERVICE_NAME: "team-2-gateway",
     LOG_LEVEL: "error",
     HACKATHON_SERVICE_URL: "http://127.0.0.1:4001",
+    JWT_SERVICE_URL: "http://127.0.0.1:4004",
+    JWT_SECRET: TEST_JWT_SECRET,
+    JWT_ISSUER: TEST_JWT_ISSUER,
+    GATEWAY_INTERNAL_SECRET: TEST_GATEWAY_SECRET,
     RATE_LIMIT_MAX: "1000",
     RATE_LIMIT_WINDOW_MS: "60000",
   };

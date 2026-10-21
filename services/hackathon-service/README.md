@@ -17,7 +17,7 @@ Domain microservice for Codyza hackathon research records.
 3. Ensure migrations were applied (SQL Editor)
 4. `npm install && npm run dev` (port **4001**)
 
-Clients should call the **gateway** on port 4000 in production.
+Clients should call the **gateway** on port 4000. Direct calls to this service need `X-Gateway-Caller: team-2-gateway` and `X-Gateway-Secret`. Health routes stay open.
 
 ## Scripts
 

@@ -8,11 +8,14 @@ import { ZodError } from "zod";
 import { env } from "./config/env.js";
 import { buildFastifyLogger, logCompletedRequest } from "./lib/logger.js";
 import { accessControlPlugin } from "./plugins/access-control-plugin.js";
+import { jwtAuthPlugin } from "./plugins/jwt-auth.js";
 import { adminRoutes } from "./routes/admin.js";
+import { authRoutes } from "./routes/auth.js";
 import { gatewayInfoRoutes } from "./routes/gateway-info.js";
 import { healthRoutes } from "./routes/health.js";
 import { proxyRoutes } from "./routes/proxy.js";
 import { serviceProxyRoutes } from "./routes/service-proxy.js";
+import "./types/fastify.js";
 
 export type BuildAppOptions = {
   logStream?: Writable;
@@ -40,14 +43,19 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     logCompletedRequest(request, reply, env.SERVICE_NAME, "gateway request completed");
   });
 
-  await app.register(cors, { origin: true });
+  await app.register(cors, {
+    origin: true,
+    allowedHeaders: ["authorization", "content-type", "x-request-id"],
+  });
   await app.register(rateLimit, {
     max: env.RATE_LIMIT_MAX,
     timeWindow: env.RATE_LIMIT_WINDOW_MS,
   });
   await app.register(accessControlPlugin);
+  await app.register(jwtAuthPlugin);
   await app.register(healthRoutes);
   await app.register(gatewayInfoRoutes);
+  await app.register(authRoutes);
   await app.register(adminRoutes);
   await app.register(serviceProxyRoutes);
   await app.register(proxyRoutes);

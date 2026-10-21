@@ -26,6 +26,13 @@ const envSchema = z.object({
     .default("true")
     .transform((value) => value === "true"),
   DB_POOL_MAX: z.coerce.number().default(10),
+  GATEWAY_INTERNAL_SECRET: z
+    .string()
+    .optional()
+    .transform((value) => {
+      const trimmed = value?.trim() ?? "";
+      return trimmed.length > 0 ? trimmed : undefined;
+    }),
 });
 
 export const env = envSchema.parse(process.env);

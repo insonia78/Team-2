@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createGatewayApp } from "./create-gateway-app.js";
+import { signTestToken } from "./tokens.js";
 
 let app: FastifyInstance | undefined;
 
@@ -21,20 +22,27 @@ describe("gateway routes", () => {
       service: "team-2-gateway",
       role: "api-gateway",
       routes: [
-        { path: "/api/hackathons/*", upstream: "http://127.0.0.1:4001" },
-        { path: "/api/organizer-followups/*", upstream: "http://127.0.0.1:4001" },
-        { path: "/api/exports/*", upstream: "http://127.0.0.1:4001" },
-        { path: "/api/ai/*", upstream: "not configured" },
-        { path: "/api/scraper/*", upstream: "not configured" },
-        { path: "/proxy/graphql", upstream: "not configured" },
+        { path: "POST /api/auth/login", upstream: "http://127.0.0.1:4004", access: "public" },
+        { path: "GET /api/auth/me", upstream: "gateway", access: "authenticated" },
+        { path: "/api/hackathons/*", upstream: "http://127.0.0.1:4001", access: "authenticated" },
+        { path: "/api/organizer-followups/*", upstream: "http://127.0.0.1:4001", access: "authenticated" },
+        { path: "/api/exports/*", upstream: "http://127.0.0.1:4001", access: "authenticated" },
+        { path: "/api/ai/*", upstream: "not configured", access: "authenticated" },
+        { path: "/api/scraper/*", upstream: "not configured", access: "authenticated" },
+        { path: "/proxy/graphql", upstream: "not configured", access: "public" },
       ],
     });
   });
 
   it("returns 503 for AI and GraphQL when those upstreams are not set", async () => {
     app = await createGatewayApp();
+    const token = await signTestToken("viewer");
 
-    const ai = await app.inject({ method: "GET", url: "/api/ai/ping" });
+    const ai = await app.inject({
+      method: "GET",
+      url: "/api/ai/ping",
+      headers: { authorization: `Bearer ${token}` },
+    });
     const graphql = await app.inject({ method: "POST", url: "/proxy/graphql" });
 
     expect(ai.statusCode).toBe(503);

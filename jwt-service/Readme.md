@@ -1,13 +1,13 @@
-# Team 2 deployment
+# JWT service
 
-## Skaffold
+Signs stateless HS256 tokens after checking `hackathon_research.app_users`.
 
-The Kubernetes manifests under [infra/](./infra) reference the `team2-etl` and `team2-scrapper` images. For remote or shared clusters, [skaffold.yaml](./skaffold.yaml) is configured to push images so the cluster can pull the generated tag.
+The gateway is the only caller. `POST /login` requires `X-Gateway-Caller: team-2-gateway` and `X-Gateway-Secret`. Health routes stay open.
 
-Example:
+## Run locally
 
-```bash
-skaffold run --default-repo <your-registry>
-```
+1. Apply `supabase/migrations/20261021140000_app_users.sql`.
+2. Copy `.env.example` to `.env`. Use the same database URL, `JWT_SECRET`, and `GATEWAY_INTERNAL_SECRET` as the gateway.
+3. `npm install && npm run dev` (port **4004**).
 
-For common local clusters (`docker-desktop`, `minikube`, and `kind-kind`), the `local-cluster` profile is auto-activated and keeps image pushes disabled so local development still works with the node's local image store.
+When the seed email and password variables are set, those three accounts are created or updated on startup. The frontend calls `POST http://localhost:4000/api/auth/login`, not this port.

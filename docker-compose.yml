@@ -14,6 +14,21 @@ services:
       timeout: 5s
       retries: 3
 
+  jwt-service:
+    build:
+      context: ./jwt-service
+      dockerfile: Dockerfile
+    ports:
+      - "4004:4004"
+    env_file:
+      - ./jwt-service/.env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4004/health/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   gateway:
     build:
       context: ./gateway
@@ -24,8 +39,11 @@ services:
       - ./gateway/.env
     environment:
       HACKATHON_SERVICE_URL: http://hackathon-service:4001
+      JWT_SERVICE_URL: http://jwt-service:4004
     depends_on:
       hackathon-service:
+        condition: service_healthy
+      jwt-service:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:

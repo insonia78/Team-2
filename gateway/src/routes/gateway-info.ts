@@ -7,12 +7,14 @@ export const gatewayInfoRoutes: FastifyPluginAsync = async (app) => {
     service: env.SERVICE_NAME,
     role: "api-gateway",
     routes: [
-      { path: "/api/hackathons/*", upstream: env.HACKATHON_SERVICE_URL },
-      { path: "/api/organizer-followups/*", upstream: env.HACKATHON_SERVICE_URL },
-      { path: "/api/exports/*", upstream: env.HACKATHON_SERVICE_URL },
-      { path: "/api/ai/*", upstream: env.AI_SERVICE_URL ?? "not configured" },
-      { path: "/api/scraper/*", upstream: env.SCRAPER_SERVICE_URL ?? "not configured" },
-      { path: "/proxy/graphql", upstream: env.PROXY_GRAPHQL_UPSTREAM_URL ?? "not configured" },
+      { path: "POST /api/auth/login", upstream: env.JWT_SERVICE_URL, access: "public" },
+      { path: "GET /api/auth/me", upstream: "gateway", access: "authenticated" },
+      { path: "/api/hackathons/*", upstream: env.HACKATHON_SERVICE_URL, access: "authenticated" },
+      { path: "/api/organizer-followups/*", upstream: env.HACKATHON_SERVICE_URL, access: "authenticated" },
+      { path: "/api/exports/*", upstream: env.HACKATHON_SERVICE_URL, access: "authenticated" },
+      { path: "/api/ai/*", upstream: env.AI_SERVICE_URL ?? "not configured", access: "authenticated" },
+      { path: "/api/scraper/*", upstream: env.SCRAPER_SERVICE_URL ?? "not configured", access: "authenticated" },
+      { path: "/proxy/graphql", upstream: env.PROXY_GRAPHQL_UPSTREAM_URL ?? "not configured", access: "public" },
     ],
   }));
 };
