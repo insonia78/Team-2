@@ -4,9 +4,9 @@ Base URL (local): `http://localhost:4000`
 
 ## Authentication
 
-Stateless HS256 JWTs. The JWT service signs them and checks the signature, issuer (`team-2-gateway`), and expiry. The gateway asks that service before it forwards a protected call. Tokens last 2 hours. Logout is the client discarding the token. `POST /verify` is internal to the gateway.
+HS256 JWTs. The JWT service signs them and checks the signature, issuer (`team-2-gateway`), expiry, the stored token row, and the account role. The gateway asks that service before it forwards a protected call. Tokens last 2 hours. `POST /api/auth/logout` revokes the current token. `POST /verify` is internal to the gateway.
 
-`POST /api/auth/login` and `POST /api/auth/invitations/accept` are public. `POST /api/auth/invitations` requires an admin token.
+`POST /api/auth/login` and `POST /api/auth/invitations/accept` are public. `POST /api/auth/invitations` and `POST /api/auth/users/:id/revoke-sessions` require an admin token. Logout requires any signed-in role.
 
 ```json
 { "email": "researcher@local", "password": "change-me-researcher" }
@@ -20,7 +20,9 @@ Stateless HS256 JWTs. The JWT service signs them and checks the signature, issue
 }
 ```
 
-An admin invites a person with `POST /api/auth/invitations`. The response includes a one-time `inviteUrl`. That link expires after 7 days. Sending another invite for the same email retires the older unused link.
+An admin invites a person with `POST /api/auth/invitations`. The response includes a one-time `inviteUrl` and `mail` (`sent`, `skipped`, or `failed`). The Python mail service sends the link when `MAIL_SERVICE_URL` and SMTP are configured. That link expires after 7 days. Sending another invite for the same email retires the older unused link.
+
+When `LDAP_URL` is set, login tries the directory first. A matching group becomes `viewer`, `researcher`, or `admin`. A directory user in none of those groups gets 403. A person who is not in the directory uses a local password. A bad directory password returns the same 401 as a bad local password.
 
 ```json
 { "email": "new.researcher@example.com", "role": "researcher" }

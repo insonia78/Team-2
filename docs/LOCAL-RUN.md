@@ -25,11 +25,23 @@ PORT=4001
 GATEWAY_INTERNAL_SECRET=local-dev-gateway-secret
 ```
 
-Apply `supabase/migrations/20261021140000_app_users.sql` in the SQL editor after the research schema, then `supabase/migrations/20261021180000_invitations.sql`.
+Apply `supabase/auth/001_auth.sql` on the auth project. The hackathon service uses the scraper project's `hackathon_research` schema and does not read `auth.app_users`.
 
 ## 3. JWT service env
 
-`jwt-service/.env` uses the same `DATABASE_URL` and `GATEWAY_INTERNAL_SECRET` as the other services. `JWT_SECRET` belongs only in this file. See `jwt-service/.env.example` for the three local seed accounts.
+`jwt-service/.env` uses `AUTH_DATABASE_URL` for the auth project. If that variable is unset, the service uses `DATABASE_URL`. `JWT_SECRET` belongs only in this file. See `jwt-service/.env.example` for the seed accounts, `MAIL_SERVICE_URL`, and the `LDAP_*` variables.
+
+## 3b. Mail service
+
+```powershell
+cd "D:\AIWorks\Codyza\HACKATHON OPPORTUNITY RESEARCH\Team-2\services\mail-service"
+py -3 -m pip install -r requirements.txt
+$env:GATEWAY_INTERNAL_SECRET="local-dev-gateway-secret"
+$env:SMTP_HOST="smtp.example.com"
+py -3 -m uvicorn main:app --host 127.0.0.1 --port 4005
+```
+
+Set `MAIL_SERVICE_URL=http://127.0.0.1:4005` on `jwt-service`. Leave it unset to keep invite links in the API response without sending mail.
 
 ## 4. Gateway env
 

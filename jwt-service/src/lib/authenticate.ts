@@ -9,9 +9,11 @@ export async function authenticate(
 ): Promise<AppUser | null> {
   const normalized = email.trim().toLowerCase();
   const user = await store.findByEmail(normalized);
-  const passwordHash = user?.passwordHash ?? dummyPasswordHash;
-  const matches = await verifyPassword(password, passwordHash).catch(() => false);
-  if (!user || !matches) {
+  const canUsePassword =
+    user !== null && (user.authSource ?? "local") === "local" && typeof user.passwordHash === "string";
+  const passwordHash = canUsePassword ? user.passwordHash : dummyPasswordHash;
+  const matches = await verifyPassword(password, passwordHash ?? dummyPasswordHash).catch(() => false);
+  if (!canUsePassword || !user || !matches) {
     return null;
   }
   return user;

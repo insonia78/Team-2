@@ -8,7 +8,8 @@ Codyza **Team 02 Task 01**: verified hackathon research platform (database + API
 |------|---------|
 | `client/` | Next.js frontend |
 | `gateway/` | API Gateway — JWT checks, roles, routes traffic to services |
-| `jwt-service/` | Login and stateless JWT issuing |
+| `jwt-service/` | Login, LDAP, and JWT checks against `auth.jwt_tokens` |
+| `services/mail-service/` | Python SMTP service for invitation links |
 | `services/hackathon-service/` | Hackathon research API (Drizzle + PostgreSQL) |
 | `ETL/` | Python ETL service |
 | `scrapper/` | Scraper service |

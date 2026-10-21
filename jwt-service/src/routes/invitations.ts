@@ -8,9 +8,11 @@ import {
   hashInviteToken,
   type InvitationStore,
 } from "../db/invitations.js";
+import type { TokenStore } from "../db/token-store.js";
+import type { MailResult } from "../lib/mail.js";
 import { hashPassword } from "../lib/password.js";
 import { ROLES } from "../lib/roles.js";
-import { signAccessToken } from "../lib/token.js";
+import { issueSession } from "../lib/session.js";
 
 const emailField = z
   .string()
@@ -36,7 +38,9 @@ function headerValue(value: string | string[] | undefined): string {
 
 export function invitationRoutes(
   store: InvitationStore | undefined,
+  tokens: TokenStore,
   bcryptRounds: number,
+  sendMail: (input: { to: string; inviteUrl: string }) => Promise<MailResult>,
 ): FastifyPluginAsync {
   return async (app) => {
     app.post("/invitations", async (request, reply) => {
@@ -70,12 +74,15 @@ export function invitationRoutes(
         return reply.code(409).send({ error: "An account with this email already exists." });
       }
 
+      const inviteUrl = buildInviteUrl(env.INVITE_URL_BASE, token);
+      const mail = await sendMail({ to: email, inviteUrl });
       return reply.code(201).send({
         invitationId: created.invitation.id,
         email: created.invitation.email,
         role: created.invitation.role,
         expiresAt: created.invitation.expiresAt,
-        inviteUrl: buildInviteUrl(env.INVITE_URL_BASE, token),
+        inviteUrl,
+        mail,
       });
     });
 
@@ -104,24 +111,11 @@ export function invitationRoutes(
         return reply.code(409).send({ error: "An account with this email already exists." });
       }
 
-      const signed = await signAccessToken(
-        { id: accepted.user.id, email: accepted.user.email, role: accepted.user.role },
-        {
-          secret: env.JWT_SECRET,
-          issuer: env.JWT_ISSUER,
-          ttlSeconds: env.JWT_TTL_SECONDS,
-        },
-      );
-
-      return {
-        token: signed.token,
-        expiresAt: signed.expiresAt,
-        user: {
-          id: accepted.user.id,
-          email: accepted.user.email,
-          role: accepted.user.role,
-        },
-      };
+      return issueSession(accepted.user, tokens, {
+        secret: env.JWT_SECRET,
+        issuer: env.JWT_ISSUER,
+        ttlSeconds: env.JWT_TTL_SECONDS,
+      });
     });
   };
 }

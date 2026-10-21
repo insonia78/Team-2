@@ -2,7 +2,6 @@ import type { FastifyInstance } from "fastify";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { buildApp } from "../src/app.js";
-import type { UserStore } from "../src/db/users.js";
 import { hashPassword } from "../src/lib/password.js";
 import { signAccessToken } from "../src/lib/token.js";
 
@@ -23,18 +22,23 @@ afterEach(async () => {
 describe("token verification", () => {
   it("accepts a token from login and rejects an expired or edited token", async () => {
     const passwordHash = await hashPassword("correct-password", 4);
+    const users = [
+      {
+        id: "11111111-1111-1111-1111-111111111111",
+        email: "researcher@local",
+        passwordHash,
+        role: "researcher" as const,
+        authSource: "local" as const,
+        ldapDn: null,
+      },
+    ];
     app = await buildApp({
       userStore: {
         async findByEmail(email) {
-          if (email !== "researcher@local") {
-            return null;
-          }
-          return {
-            id: "11111111-1111-1111-1111-111111111111",
-            email,
-            passwordHash,
-            role: "researcher",
-          } satisfies Awaited<ReturnType<UserStore["findByEmail"]>>;
+          return users.find((user) => user.email === email) ?? null;
+        },
+        async findById(id) {
+          return users.find((user) => user.id === id) ?? null;
         },
       },
       dummyPasswordHash: await hashPassword("dummy-password", 4),
@@ -82,7 +86,14 @@ describe("token verification", () => {
 
   it("rejects verify calls that do not come from the gateway", async () => {
     app = await buildApp({
-      userStore: { async findByEmail() { return null; } },
+      userStore: {
+        async findByEmail() {
+          return null;
+        },
+        async findById() {
+          return null;
+        },
+      },
       dummyPasswordHash: await hashPassword("dummy-password", 4),
     });
 

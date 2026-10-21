@@ -14,6 +14,23 @@ services:
       timeout: 5s
       retries: 3
 
+  mail-service:
+    build:
+      context: ./services/mail-service
+      dockerfile: Dockerfile
+    ports:
+      - "4005:4005"
+    environment:
+      PORT: "4005"
+      GATEWAY_INTERNAL_SECRET: ${GATEWAY_INTERNAL_SECRET:-local-dev-gateway-secret}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-research@localhost}
+      SMTP_TLS: ${SMTP_TLS:-true}
+    restart: unless-stopped
+
   jwt-service:
     build:
       context: ./jwt-service
@@ -22,6 +39,8 @@ services:
       - "4004:4004"
     env_file:
       - ./jwt-service/.env
+    environment:
+      MAIL_SERVICE_URL: http://mail-service:4005
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4004/health/ready"]

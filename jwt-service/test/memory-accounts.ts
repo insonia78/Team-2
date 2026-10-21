@@ -28,6 +28,9 @@ export function createMemoryAccounts(initial: AppUser[] = []) {
     async findByEmail(email) {
       return users.find((user) => user.email === email) ?? null;
     },
+    async findById(id) {
+      return users.find((user) => user.id === id) ?? null;
+    },
   };
 
   const invitationStore: InvitationStore = {
@@ -79,6 +82,8 @@ export function createMemoryAccounts(initial: AppUser[] = []) {
           email: invitation.email,
           passwordHash: input.passwordHash,
           role: invitation.role,
+          authSource: "local",
+          ldapDn: null,
         };
         users.push(user);
         invitation.usedAt = input.now.toISOString();

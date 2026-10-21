@@ -121,6 +121,28 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     return forwardToJwtService(request, reply, "/invitations/accept", parsed.data);
   });
 
+  app.post("/api/auth/logout", authRateLimit, async (request, reply) => {
+    const authorization = request.headers.authorization;
+    if (!authorization?.startsWith("Bearer ")) {
+      return reply.code(401).send({ error: "Missing or invalid Authorization header." });
+    }
+    return forwardToJwtService(request, reply, "/logout", {}, { authorization });
+  });
+
+  app.post<{ Params: { id: string } }>("/api/auth/users/:id/revoke-sessions", authRateLimit, async (request, reply) => {
+    if (request.authUser?.role !== "admin") {
+      return reply.code(403).send({ error: "Admin role is required." });
+    }
+    const parsed = z.string().uuid().safeParse(request.params.id);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "Validation failed." });
+    }
+    return forwardToJwtService(request, reply, `/users/${parsed.data}/revoke-sessions`, {}, {
+      "x-user-id": request.authUser.id,
+      "x-user-role": request.authUser.role,
+    });
+  });
+
   app.get("/api/auth/me", async (request, reply) => {
     if (!request.authUser) {
       return reply.code(401).send({ error: "Missing or invalid Authorization header." });

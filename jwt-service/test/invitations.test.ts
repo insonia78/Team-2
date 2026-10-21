@@ -60,6 +60,7 @@ describe("invitation sign-in", () => {
     expect(body.email).toBe("new.researcher@example.com");
     expect(body.role).toBe("researcher");
     expect(body.invitationId).toEqual(expect.any(String));
+    expect(created.json().mail).toBe("skipped");
     const inviteToken = tokenFrom(body.inviteUrl);
     expect(inviteToken.length).toBeGreaterThan(32);
 
@@ -114,6 +115,8 @@ describe("invitation sign-in", () => {
         email: "taken@example.com",
         passwordHash: "hash",
         role: "viewer",
+        authSource: "local",
+        ldapDn: null,
       },
     ]);
     const { service } = await createService(accounts);
@@ -162,6 +165,8 @@ describe("invitation sign-in", () => {
       email: "another@example.com",
       passwordHash: "hash",
       role: "researcher",
+      authSource: "local",
+      ldapDn: null,
     });
     const raced = await service.inject({
       method: "POST",

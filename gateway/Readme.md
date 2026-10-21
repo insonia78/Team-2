@@ -8,9 +8,9 @@ Central entry point for Team-2. **Does not contain business logic** — it route
 - Rate limiting
 - IP/path allow & block lists
 - Admin access-control APIs
-- Asks the JWT service to verify stateless tokens, then applies role checks (`viewer`, `researcher`, `admin`)
+- Asks the JWT service to verify tokens against the stored row and account role, then applies role checks (`viewer`, `researcher`, `admin`)
 - Reverse proxy to:
-  - `jwt-service` — `POST /api/auth/login`, `POST /api/auth/invitations`, `POST /api/auth/invitations/accept`
+  - `jwt-service` — `POST /api/auth/login`, `POST /api/auth/logout`, `POST /api/auth/invitations`, `POST /api/auth/invitations/accept`, `POST /api/auth/users/:id/revoke-sessions`
   - `hackathon-service` — `/api/hackathons`, `/api/exports`, `/api/organizer-followups`
   - `ai-service` (future) — `/api/ai`
   - `scraper-service` (future) — `/api/scraper`

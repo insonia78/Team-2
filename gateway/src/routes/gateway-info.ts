@@ -10,6 +10,8 @@ export const gatewayInfoRoutes: FastifyPluginAsync = async (app) => {
       { path: "POST /api/auth/login", upstream: env.JWT_SERVICE_URL, access: "public" },
       { path: "POST /api/auth/invitations", upstream: env.JWT_SERVICE_URL, access: "admin" },
       { path: "POST /api/auth/invitations/accept", upstream: env.JWT_SERVICE_URL, access: "public" },
+      { path: "POST /api/auth/logout", upstream: env.JWT_SERVICE_URL, access: "authenticated" },
+      { path: "POST /api/auth/users/:id/revoke-sessions", upstream: env.JWT_SERVICE_URL, access: "admin" },
       { path: "GET /api/auth/me", upstream: "gateway", access: "authenticated" },
       { path: "/api/hackathons/*", upstream: env.HACKATHON_SERVICE_URL, access: "authenticated" },
       { path: "/api/organizer-followups/*", upstream: env.HACKATHON_SERVICE_URL, access: "authenticated" },

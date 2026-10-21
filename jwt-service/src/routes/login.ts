@@ -1,10 +1,13 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 
-import type { UserStore } from "../db/users.js";
 import { env } from "../config/env.js";
+import type { TokenStore } from "../db/token-store.js";
+import type { DirectoryAccountInput, DirectoryAccountResult, UserStore } from "../db/users.js";
 import { authenticate } from "../lib/authenticate.js";
-import { signAccessToken } from "../lib/token.js";
+import type { DirectoryAuthenticator } from "../lib/directory.js";
+import { mapDirectoryRole, type DirectoryGroupMapping } from "../lib/directory-role.js";
+import { issueSession } from "../lib/session.js";
 
 const loginBody = z.object({
   email: z
@@ -15,7 +18,16 @@ const loginBody = z.object({
   password: z.string().min(1),
 });
 
-export function loginRoutes(store: UserStore, dummyPasswordHash: string): FastifyPluginAsync {
+export function loginRoutes(
+  store: UserStore,
+  dummyPasswordHash: string,
+  tokens: TokenStore,
+  options: {
+    directory?: DirectoryAuthenticator;
+    saveDirectoryAccount?: (input: DirectoryAccountInput) => Promise<DirectoryAccountResult>;
+    groupMapping?: DirectoryGroupMapping;
+  } = {},
+): FastifyPluginAsync {
   return async (app) => {
     app.post("/login", async (request, reply) => {
       const parsed = loginBody.safeParse(request.body);
@@ -26,29 +38,49 @@ export function loginRoutes(store: UserStore, dummyPasswordHash: string): Fastif
         });
       }
 
-      const user = await authenticate(store, parsed.data.email, parsed.data.password, dummyPasswordHash);
+      const email = parsed.data.email.toLowerCase();
+      if (options.directory) {
+        const directoryResult = await options.directory.authenticate(email, parsed.data.password);
+        if (directoryResult.status === "unavailable") {
+          return reply.code(503).send({ error: "Directory login is unavailable." });
+        }
+        if (directoryResult.status === "invalid") {
+          return reply.code(401).send({ error: "Invalid email or password." });
+        }
+        if (directoryResult.status === "authenticated") {
+          if (!options.saveDirectoryAccount) {
+            return reply.code(503).send({ error: "Directory accounts are not configured." });
+          }
+          const role = mapDirectoryRole(directoryResult.identity.groups, options.groupMapping ?? {});
+          if (!role) {
+            return reply.code(403).send({ error: "This directory account is not allowed in this application." });
+          }
+          const saved = await options.saveDirectoryAccount({
+            email,
+            role,
+            ldapDn: directoryResult.identity.dn,
+          });
+          if (saved.previousRole && saved.previousRole !== saved.user.role) {
+            await tokens.revokeForUser(saved.user.id);
+          }
+          return issueSession(saved.user, tokens, {
+            secret: env.JWT_SECRET,
+            issuer: env.JWT_ISSUER,
+            ttlSeconds: env.JWT_TTL_SECONDS,
+          });
+        }
+      }
+
+      const user = await authenticate(store, email, parsed.data.password, dummyPasswordHash);
       if (!user) {
         return reply.code(401).send({ error: "Invalid email or password." });
       }
 
-      const signed = await signAccessToken(
-        { id: user.id, email: user.email, role: user.role },
-        {
-          secret: env.JWT_SECRET,
-          issuer: env.JWT_ISSUER,
-          ttlSeconds: env.JWT_TTL_SECONDS,
-        },
-      );
-
-      return {
-        token: signed.token,
-        expiresAt: signed.expiresAt,
-        user: {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-        },
-      };
+      return issueSession(user, tokens, {
+        secret: env.JWT_SECRET,
+        issuer: env.JWT_ISSUER,
+        ttlSeconds: env.JWT_TTL_SECONDS,
+      });
     });
   };
 }

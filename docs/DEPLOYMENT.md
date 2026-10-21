@@ -29,7 +29,9 @@ Apply `supabase/migrations/20261020180000_hackathon_research.sql` after the earl
 
 **Hackathon service:** `DATABASE_URL`, `DATABASE_SSL`, `GATEWAY_INTERNAL_SECRET` (standard PostgreSQL; Supabase is optional hosting only).
 
-**JWT service:** the same `DATABASE_URL` and `GATEWAY_INTERNAL_SECRET` as the gateway, plus its own `JWT_SECRET`. Set `INVITE_URL_BASE` to the frontend page that accepts an invitation. Leave seed passwords unset in production.
+**JWT service:** `AUTH_DATABASE_URL` for the auth project, the same `GATEWAY_INTERNAL_SECRET` as the gateway, and its own `JWT_SECRET` (`openssl rand -base64 32`). Set `INVITE_URL_BASE` to the frontend page that accepts an invitation. Leave seed passwords unset in production. Set `MAIL_SERVICE_URL` and the `LDAP_*` variables when those are in use.
+
+**Mail service:** `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_TLS`, and the same `GATEWAY_INTERNAL_SECRET`. It does not receive a database URL. Apply `supabase/auth/001_auth.sql` on the auth project. Apply `supabase/auth/002_drop_research_accounts.sql` only after login, invite, verify, and logout succeed against `auth`. Leave the event tables on the scraper project.
 
 Never commit `.env` or paste production secrets into GitHub. Use the hosting provider **Environment Variables** / **Secrets** UI.
 

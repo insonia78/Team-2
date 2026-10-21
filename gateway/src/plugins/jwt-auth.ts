@@ -90,6 +90,10 @@ const jwtAuthPluginImpl: FastifyPluginAsync = async (app) => {
     if (rejectBearer(result, reply) || result.status !== "ok") {
       return;
     }
+    if (path === "/api/auth/logout") {
+      attachAuthUser(request, result.user);
+      return;
+    }
     if (!roleAllowsMethod(result.user.role, request.method)) {
       return reply.code(403).send({ error: "This role cannot perform that action." });
     }

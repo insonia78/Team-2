@@ -12,7 +12,7 @@ const user = {
 };
 
 describe("signAccessToken", () => {
-  it("signs a stateless token with subject, email, role, and expiry", async () => {
+  it("signs a token with subject, email, role, token id, claim hash, and expiry", async () => {
     const signed = await signAccessToken(user, { secret, issuer, ttlSeconds: 7200 });
     const { payload } = await jwtVerify(signed.token, new TextEncoder().encode(secret), {
       issuer,
@@ -23,6 +23,9 @@ describe("signAccessToken", () => {
     expect(payload.email).toBe(user.email);
     expect(payload.role).toBe(user.role);
     expect(payload.iss).toBe(issuer);
+    expect(payload.jti).toEqual(expect.any(String));
+    expect(payload.sha).toBe(signed.record.tokenSha);
+    expect(signed.record.role).toBe(user.role);
     expect(signed.expiresAt).toBe(new Date((payload.exp ?? 0) * 1000).toISOString());
   });
 

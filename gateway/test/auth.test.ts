@@ -288,6 +288,55 @@ describe("gateway authentication", () => {
     });
   });
 
+  it("forwards logout with the bearer token and lets only an admin revoke sessions", async () => {
+    const fetchMock = stubTokenVerification(async (url, init) => {
+      if (url.endsWith("/logout")) {
+        return new Response(JSON.stringify({ revoked: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      if (url.includes("/revoke-sessions")) {
+        return new Response(JSON.stringify({ revoked: 2 }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ error: "unexpected", url, hasBody: Boolean(init?.body) }), { status: 500 });
+    });
+    app = await createGatewayApp();
+    const researcher = await signTestToken("researcher");
+    const admin = await signTestToken("admin");
+
+    const logout = await app.inject({
+      method: "POST",
+      url: "/api/auth/logout",
+      headers: { authorization: `Bearer ${researcher}` },
+    });
+    const denied = await app.inject({
+      method: "POST",
+      url: "/api/auth/users/33333333-3333-3333-3333-333333333333/revoke-sessions",
+      headers: { authorization: `Bearer ${researcher}` },
+    });
+    const revoked = await app.inject({
+      method: "POST",
+      url: "/api/auth/users/33333333-3333-3333-3333-333333333333/revoke-sessions",
+      headers: { authorization: `Bearer ${admin}` },
+    });
+
+    expect(logout.statusCode).toBe(200);
+    expect(logout.json()).toEqual({ revoked: true });
+    expect(denied.statusCode).toBe(403);
+    expect(revoked.statusCode).toBe(200);
+    const logoutCall = fetchMock.mock.calls.find((call) => String(call[0]).endsWith("/logout"));
+    const logoutHeaders = new Headers((logoutCall?.[1] as RequestInit | undefined)?.headers);
+    expect(logoutHeaders.get("authorization")).toBe(`Bearer ${researcher}`);
+    const revokeCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("/revoke-sessions"));
+    const revokeHeaders = new Headers((revokeCall?.[1] as RequestInit | undefined)?.headers);
+    expect(revokeHeaders.get("x-user-role")).toBe("admin");
+    expect(revokeHeaders.get("authorization")).toBeNull();
+  });
+
   it("rejects a viewer token on the admin API", async () => {
     stubTokenVerification();
     app = await createGatewayApp({ ADMIN_API_KEY: "secret-key" });

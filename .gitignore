@@ -8,3 +8,6 @@ logs/
 .idea/
 .vscode/
 coverage/
+.venv/
+__pycache__/
+*.pyc

@@ -26,6 +26,9 @@ async function createApp(users: AppUser[]) {
     async findByEmail(email) {
       return users.find((user) => user.email === email) ?? null;
     },
+    async findById(id) {
+      return users.find((user) => user.id === id) ?? null;
+    },
   };
   app = await buildApp({
     userStore: store,
@@ -43,6 +46,8 @@ describe("jwt login", () => {
         email: "researcher@local",
         passwordHash,
         role: "researcher",
+        authSource: "local",
+        ldapDn: null,
       },
     ]);
 
@@ -73,6 +78,8 @@ describe("jwt login", () => {
         email: "researcher@local",
         passwordHash,
         role: "researcher",
+        authSource: "local",
+        ldapDn: null,
       },
     ]);
 

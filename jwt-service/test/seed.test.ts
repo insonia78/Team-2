@@ -25,6 +25,16 @@ function env(overrides: Partial<JwtEnv> = {}): JwtEnv {
     SEED_RESEARCHER_PASSWORD: undefined,
     SEED_ADMIN_EMAIL: undefined,
     SEED_ADMIN_PASSWORD: undefined,
+    MAIL_SERVICE_URL: undefined,
+    LDAP_URL: undefined,
+    LDAP_BIND_DN: undefined,
+    LDAP_BIND_PASSWORD: undefined,
+    LDAP_BASE_DN: undefined,
+    LDAP_USER_FILTER: "(mail={{email}})",
+    LDAP_GROUP_ADMIN: undefined,
+    LDAP_GROUP_RESEARCHER: undefined,
+    LDAP_GROUP_VIEWER: undefined,
+    AUTH_DATABASE_URL: undefined,
     ...overrides,
   };
 }
