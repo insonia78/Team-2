@@ -10,6 +10,7 @@ import { rewriteUpstreamHeaders } from "../src/lib/upstream-headers.js";
 import { TEST_GATEWAY_SECRET } from "./constants.js";
 import { createGatewayApp } from "./create-gateway-app.js";
 import { signTestToken } from "./tokens.js";
+import { stubTokenVerification } from "./verify-mock.js";
 
 let app: FastifyInstance | undefined;
 let upstream: Server | undefined;
@@ -121,6 +122,7 @@ describe("gateway authentication", () => {
   });
 
   it("requires a bearer token on hackathon routes and enforces roles", async () => {
+    const fetchMock = stubTokenVerification();
     const { seen, url } = await startUpstream();
     app = await createGatewayApp({ HACKATHON_SERVICE_URL: url });
     const viewer = await signTestToken("viewer");
@@ -181,9 +183,14 @@ describe("gateway authentication", () => {
     expect(seen[0]?.["x-gateway-secret"]).toBe(TEST_GATEWAY_SECRET);
     expect(seen[1]?.["x-user-role"]).toBe("researcher");
     expect(seen[2]?.["x-user-role"]).toBe("admin");
+    const verifyCall = fetchMock.mock.calls.find((call) => String(call[0]).endsWith("/verify"));
+    const verifyHeaders = new Headers((verifyCall?.[1] as RequestInit | undefined)?.headers);
+    expect(verifyHeaders.get("x-gateway-caller")).toBe("team-2-gateway");
+    expect(verifyHeaders.get("x-gateway-secret")).toBe(TEST_GATEWAY_SECRET);
   });
 
   it("lets an admin token use the admin API without the shared key", async () => {
+    stubTokenVerification();
     app = await createGatewayApp();
     const token = await signTestToken("admin");
 
@@ -197,6 +204,7 @@ describe("gateway authentication", () => {
   });
 
   it("rejects a viewer token on the admin API", async () => {
+    stubTokenVerification();
     app = await createGatewayApp({ ADMIN_API_KEY: "secret-key" });
     const token = await signTestToken("viewer");
 

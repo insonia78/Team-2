@@ -1,12 +1,14 @@
 import type { FastifyInstance } from "fastify";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createGatewayApp } from "./create-gateway-app.js";
 import { signTestToken } from "./tokens.js";
+import { stubTokenVerification } from "./verify-mock.js";
 
 let app: FastifyInstance | undefined;
 
 afterEach(async () => {
+  vi.unstubAllGlobals();
   await app?.close();
   app = undefined;
 });
@@ -35,6 +37,7 @@ describe("gateway routes", () => {
   });
 
   it("returns 503 for AI and GraphQL when those upstreams are not set", async () => {
+    stubTokenVerification();
     app = await createGatewayApp();
     const token = await signTestToken("viewer");
 

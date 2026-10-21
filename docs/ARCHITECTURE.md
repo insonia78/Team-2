@@ -26,8 +26,8 @@
 
 - Single public URL for the team
 - Proxies paths to internal services
-- No Supabase credentials in gateway. Login and password hashes stay in `jwt-service`.
-- Verifies stateless JWTs and enforces `viewer`, `researcher`, and `admin` before proxying `/api/*`
+- No database URL and no JWT signing secret. Login, signing, and token checks stay in `jwt-service`.
+- Asks `jwt-service` `POST /verify` on protected routes, then enforces `viewer`, `researcher`, and `admin` before proxying `/api/*`
 - Forwards `X-User-Id`, `X-User-Role`, and `X-User-Email` from the token, plus `X-Gateway-Caller` and `X-Gateway-Secret`
 - Request logs go to stdout as JSON. In development they are also printed as readable lines, and copied to `LOG_FILE_PATH` when set. The hackathon service logs the same way. Passwords, bearer tokens, and the gateway secret are removed from logs.
 
@@ -38,6 +38,7 @@ The hackathon service uses schema `hackathon_research` from `supabase/migrations
 ## JWT service (`jwt-service/`)
 
 - `POST /login` checks `hackathon_research.app_users` and signs the token
+- `POST /verify` checks the signature, issuer, and expiry. It does not read a token table
 - Accepts calls only from the gateway (`X-Gateway-Caller` / `X-Gateway-Secret`)
 - Health routes stay open so the gateway readiness check can reach them
 

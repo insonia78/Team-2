@@ -47,8 +47,6 @@ const envSchema = z.object({
   AI_SERVICE_URL: z.string().url().optional(),
   SCRAPER_SERVICE_URL: z.string().url().optional(),
 
-  JWT_SECRET: optionalSecret(32),
-  JWT_ISSUER: z.string().min(1).default("team-2-gateway"),
   GATEWAY_INTERNAL_SECRET: optionalSecret(16),
 
   ADMIN_API_KEY: z.string().optional(),
@@ -64,13 +62,6 @@ const envSchema = z.object({
 }).superRefine((value, ctx) => {
   if (value.NODE_ENV !== "production") {
     return;
-  }
-  if (!value.JWT_SECRET) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["JWT_SECRET"],
-      message: "JWT_SECRET is required in production",
-    });
   }
   if (!value.GATEWAY_INTERNAL_SECRET) {
     ctx.addIssue({

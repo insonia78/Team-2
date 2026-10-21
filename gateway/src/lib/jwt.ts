@@ -1,5 +1,3 @@
-import { jwtVerify } from "jose";
-
 export const ROLES = ["viewer", "researcher", "admin"] as const;
 
 export type Role = (typeof ROLES)[number];
@@ -10,8 +8,6 @@ export type AuthUser = {
   role: Role;
   expiresAt: string;
 };
-
-const encoder = new TextEncoder();
 
 export function isRole(value: unknown): value is Role {
   return typeof value === "string" && ROLES.some((role) => role === value);
@@ -33,28 +29,23 @@ export function roleAllowsMethod(role: Role, method: string): boolean {
   return false;
 }
 
-export async function verifyAccessToken(
-  token: string,
-  secret: string,
-  issuer: string,
-): Promise<AuthUser> {
-  const { payload } = await jwtVerify(token, encoder.encode(secret), {
-    issuer,
-    algorithms: ["HS256"],
-  });
-
-  const expiresAtSeconds = payload.exp;
-  if (!payload.sub || typeof payload.email !== "string" || !isRole(payload.role)) {
-    throw new Error("Token is missing required claims.");
+export function readVerifiedUser(value: unknown): AuthUser | undefined {
+  if (typeof value !== "object" || value === null) {
+    return undefined;
   }
-  if (typeof expiresAtSeconds !== "number") {
-    throw new Error("Token is missing an expiry.");
+  const record = value as Record<string, unknown>;
+  if (
+    typeof record.id !== "string" ||
+    typeof record.email !== "string" ||
+    typeof record.expiresAt !== "string" ||
+    !isRole(record.role)
+  ) {
+    return undefined;
   }
-
   return {
-    id: payload.sub,
-    email: payload.email,
-    role: payload.role,
-    expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
+    id: record.id,
+    email: record.email,
+    role: record.role,
+    expiresAt: record.expiresAt,
   };
 }

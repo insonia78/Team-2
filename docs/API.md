@@ -4,7 +4,7 @@ Base URL (local): `http://localhost:4000`
 
 ## Authentication
 
-Stateless HS256 JWTs. The gateway checks the signature, issuer (`team-2-gateway`), and expiry. Tokens last 2 hours. Logout is the client discarding the token.
+Stateless HS256 JWTs. The JWT service signs them and checks the signature, issuer (`team-2-gateway`), and expiry. The gateway asks that service before it forwards a protected call. Tokens last 2 hours. Logout is the client discarding the token. `POST /verify` is internal to the gateway.
 
 `POST /api/auth/login` is public.
 

@@ -1,9 +1,10 @@
-import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import fp from "fastify-plugin";
 
 import { env } from "../config/env.js";
-import { roleAllowsMethod, verifyAccessToken, type AuthUser } from "../lib/jwt.js";
+import { roleAllowsMethod } from "../lib/jwt.js";
 import { attachAuthUser } from "../lib/upstream-headers.js";
+import { verifyBearer, type BearerResult } from "../lib/verify-client.js";
 
 const PROXIED_PREFIXES = [
   "/api/hackathons",
@@ -12,12 +13,6 @@ const PROXIED_PREFIXES = [
   "/api/ai",
   "/api/scraper",
 ];
-
-type BearerResult =
-  | { status: "anonymous" }
-  | { status: "unconfigured" }
-  | { status: "invalid" }
-  | { status: "ok"; user: AuthUser };
 
 export function normalizePath(url: string): string {
   const path = url.split("?")[0] ?? url;
@@ -41,32 +36,16 @@ function isProxiedApi(path: string): boolean {
   return PROXIED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
-async function readBearer(request: FastifyRequest): Promise<BearerResult> {
-  const header = request.headers.authorization;
-  if (!header) {
-    return { status: "anonymous" };
-  }
-  if (!env.JWT_SECRET) {
-    return { status: "unconfigured" };
-  }
-  if (!header.startsWith("Bearer ") || header.length <= "Bearer ".length) {
-    return { status: "invalid" };
-  }
-
-  try {
-    const user = await verifyAccessToken(header.slice("Bearer ".length), env.JWT_SECRET, env.JWT_ISSUER);
-    return { status: "ok", user };
-  } catch {
-    return { status: "invalid" };
-  }
-}
-
 function rejectBearer(result: BearerResult, reply: FastifyReply): boolean {
   if (result.status === "unconfigured") {
     reply.code(503).send({
-      error: "JWT authentication is not configured.",
-      env: "JWT_SECRET",
+      error: "Gateway secret is not configured.",
+      env: "GATEWAY_INTERNAL_SECRET",
     });
+    return true;
+  }
+  if (result.status === "unreachable") {
+    reply.code(502).send({ error: "Gateway failed to reach the JWT service." });
     return true;
   }
   if (result.status === "anonymous") {
@@ -92,7 +71,7 @@ const jwtAuthPluginImpl: FastifyPluginAsync = async (app) => {
     }
 
     if (path === "/admin" || path.startsWith("/admin/")) {
-      const result = await readBearer(request);
+      const result = await verifyBearer(request.headers.authorization);
       if (result.status === "anonymous") {
         return;
       }
@@ -107,14 +86,7 @@ const jwtAuthPluginImpl: FastifyPluginAsync = async (app) => {
       return;
     }
 
-    if (!env.JWT_SECRET) {
-      return reply.code(503).send({
-        error: "JWT authentication is not configured.",
-        env: "JWT_SECRET",
-      });
-    }
-
-    const result = await readBearer(request);
+    const result = await verifyBearer(request.headers.authorization);
     if (rejectBearer(result, reply) || result.status !== "ok") {
       return;
     }

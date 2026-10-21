@@ -1,6 +1,6 @@
-import { SignJWT } from "jose";
+import { jwtVerify, SignJWT } from "jose";
 
-import type { Role } from "./roles.js";
+import { isRole, type Role } from "./roles.js";
 
 const encoder = new TextEncoder();
 
@@ -26,6 +26,38 @@ export async function signAccessToken(
 
   return {
     token,
+    expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
+  };
+}
+
+export type VerifiedToken = {
+  id: string;
+  email: string;
+  role: Role;
+  expiresAt: string;
+};
+
+export async function verifyAccessToken(
+  token: string,
+  secret: string,
+  issuer: string,
+): Promise<VerifiedToken> {
+  const { payload } = await jwtVerify(token, encoder.encode(secret), {
+    issuer,
+    algorithms: ["HS256"],
+  });
+  const expiresAtSeconds = payload.exp;
+  if (!payload.sub || typeof payload.email !== "string" || !isRole(payload.role)) {
+    throw new Error("Token is missing required claims.");
+  }
+  if (typeof expiresAtSeconds !== "number") {
+    throw new Error("Token is missing an expiry.");
+  }
+
+  return {
+    id: payload.sub,
+    email: payload.email,
+    role: payload.role,
     expiresAt: new Date(expiresAtSeconds * 1000).toISOString(),
   };
 }

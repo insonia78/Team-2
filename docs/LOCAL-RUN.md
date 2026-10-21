@@ -29,7 +29,7 @@ Apply `supabase/migrations/20261021140000_app_users.sql` in the SQL editor after
 
 ## 3. JWT service env
 
-`jwt-service/.env` uses the same `DATABASE_URL`, `JWT_SECRET`, and `GATEWAY_INTERNAL_SECRET` as the gateway. See `jwt-service/.env.example` for the three local seed accounts.
+`jwt-service/.env` uses the same `DATABASE_URL` and `GATEWAY_INTERNAL_SECRET` as the other services. `JWT_SECRET` belongs only in this file. See `jwt-service/.env.example` for the three local seed accounts.
 
 ## 4. Gateway env
 
@@ -39,8 +39,6 @@ Apply `supabase/migrations/20261021140000_app_users.sql` in the SQL editor after
 PORT=4000
 HACKATHON_SERVICE_URL=http://127.0.0.1:4001
 JWT_SERVICE_URL=http://127.0.0.1:4004
-JWT_SECRET=local-dev-jwt-secret-must-be-32-chars
-JWT_ISSUER=team-2-gateway
 GATEWAY_INTERNAL_SECRET=local-dev-gateway-secret
 ```
 

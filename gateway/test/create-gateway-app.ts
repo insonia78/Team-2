@@ -3,7 +3,7 @@ import type { Writable } from "node:stream";
 import type { FastifyInstance } from "fastify";
 import { vi } from "vitest";
 
-import { TEST_GATEWAY_SECRET, TEST_JWT_ISSUER, TEST_JWT_SECRET } from "./constants.js";
+import { TEST_GATEWAY_SECRET } from "./constants.js";
 
 const GATEWAY_ENV_KEYS = [
   "NODE_ENV",
@@ -45,8 +45,6 @@ export async function createGatewayApp(
     LOG_LEVEL: "error",
     HACKATHON_SERVICE_URL: "http://127.0.0.1:4001",
     JWT_SERVICE_URL: "http://127.0.0.1:4004",
-    JWT_SECRET: TEST_JWT_SECRET,
-    JWT_ISSUER: TEST_JWT_ISSUER,
     GATEWAY_INTERNAL_SECRET: TEST_GATEWAY_SECRET,
     RATE_LIMIT_MAX: "1000",
     RATE_LIMIT_WINDOW_MS: "60000",

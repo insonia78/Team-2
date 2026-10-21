@@ -11,8 +11,6 @@ describe("loadEnv", () => {
     expect(env.SERVICE_NAME).toBe("team-2-gateway");
     expect(env.HACKATHON_SERVICE_URL).toBe("http://127.0.0.1:4001");
     expect(env.JWT_SERVICE_URL).toBe("http://127.0.0.1:4004");
-    expect(env.JWT_ISSUER).toBe("team-2-gateway");
-    expect(env.JWT_SECRET).toBeUndefined();
     expect(env.GATEWAY_INTERNAL_SECRET).toBeUndefined();
     expect(env.IP_BLOCKLIST).toEqual([]);
     expect(env.PATH_BLOCKLIST).toEqual([]);
@@ -43,12 +41,11 @@ describe("loadEnv", () => {
     expect(() => loadEnv({ HACKATHON_SERVICE_URL: "not-a-url" })).toThrow();
   });
 
-  it("requires both secrets in production", () => {
+  it("requires the gateway secret in production", () => {
     expect(() => loadEnv({ NODE_ENV: "production" })).toThrow();
     expect(() =>
       loadEnv({
         NODE_ENV: "production",
-        JWT_SECRET: "test-jwt-secret-at-least-32-characters",
         GATEWAY_INTERNAL_SECRET: "test-gateway-secret-value",
       }),
     ).not.toThrow();

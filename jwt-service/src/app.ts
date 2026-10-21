@@ -9,6 +9,7 @@ import { buildFastifyLogger, logCompletedRequest } from "./lib/logger.js";
 import { hashPassword } from "./lib/password.js";
 import { healthRoutes } from "./routes/health.js";
 import { loginRoutes } from "./routes/login.js";
+import { verifyRoutes } from "./routes/verify.js";
 
 export type BuildAppOptions = {
   userStore: UserStore;
@@ -51,6 +52,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   await app.register(cors, { origin: true });
   await app.register(healthRoutes(options.checkDatabase));
   await app.register(loginRoutes(options.userStore, dummyPasswordHash));
+  await app.register(verifyRoutes);
 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ZodError) {

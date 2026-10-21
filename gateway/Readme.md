@@ -8,7 +8,7 @@ Central entry point for Team-2. **Does not contain business logic** — it route
 - Rate limiting
 - IP/path allow & block lists
 - Admin access-control APIs
-- Stateless JWT verification and role checks (`viewer`, `researcher`, `admin`)
+- Asks the JWT service to verify stateless tokens, then applies role checks (`viewer`, `researcher`, `admin`)
 - Reverse proxy to:
   - `jwt-service` — `POST /api/auth/login`
   - `hackathon-service` — `/api/hackathons`, `/api/exports`, `/api/organizer-followups`
@@ -29,7 +29,7 @@ npm install && npm run dev
 
 # Terminal 2
 cd ../../gateway
-# gateway/.env needs HACKATHON_SERVICE_URL, JWT_SERVICE_URL, JWT_SECRET, and GATEWAY_INTERNAL_SECRET
+# gateway/.env needs HACKATHON_SERVICE_URL, JWT_SERVICE_URL, and GATEWAY_INTERNAL_SECRET
 npm install && npm run dev
 ```
 
