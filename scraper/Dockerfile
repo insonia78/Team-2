@@ -17,6 +17,8 @@ RUN attempts=0; \
 COPY tsconfig.json tsconfig.build.json ./
 COPY index.ts mongodb.ts ./
 COPY models ./models
+COPY domains ./domains
+COPY shared ./shared
 
 RUN node ./node_modules/typescript/lib/tsc.js -p tsconfig.build.json \
     && npm prune --omit=dev --no-audit --no-fund \

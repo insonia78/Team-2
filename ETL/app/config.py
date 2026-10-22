@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     ai_web_fetch_max_chars: int = Field(default=12000, alias="AI_WEB_FETCH_MAX_CHARS", ge=2000, le=50000)
     ai_web_fetch_max_urls: int = Field(default=3, alias="AI_WEB_FETCH_MAX_URLS", ge=1, le=6)
     ai_web_fetch_max_discovered_urls: int = Field(default=3, alias="AI_WEB_FETCH_MAX_DISCOVERED_URLS", ge=0, le=10)
+
+    @field_validator("database_url")
+    @classmethod
+    def use_psycopg_driver(cls, value: str) -> str:
+        if value.startswith(("postgresql://", "postgres://")):
+            return "postgresql+psycopg://" + value.split("://", 1)[1]
+        return value
 
 
 @lru_cache(maxsize=1)

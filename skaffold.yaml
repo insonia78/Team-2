@@ -9,10 +9,10 @@ manifests:
     - ./infra/etl-secret.yaml
     - ./infra/etl-deployment.yaml
     - ./infra/etl-service.yaml
-    - ./infra/scrapper-configmap.yaml
-    - ./infra/scrapper-secret.yaml
-    - ./infra/scrapper-deployment.yaml
-    - ./infra/scrapper-service.yaml
+    - ./infra/scraper-configmap.yaml
+    - ./infra/scraper-secret.yaml
+    - ./infra/scraper-deployment.yaml
+    - ./infra/scraper-service.yaml
 build:
    local:
         push: false # <-- Cleanly overrides build strategies for local environments without patches
@@ -27,8 +27,8 @@ build:
             dest: .
           - src: "main.py"
             dest: .
-    - image: team2-scrapper
-      context: scrapper
+    - image: team2-scraper
+      context: scraper
       docker:
         dockerfile: Dockerfile
       sync:

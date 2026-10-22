@@ -71,6 +71,10 @@ uv run fastapi dev main.py
 
 Before running the ETL locally or in Kubernetes, set these required secrets:
 
+Use `postgresql+psycopg://USER:PASSWORD@HOST:5432/hackathons` for Psycopg 3.
+Bare `postgresql://` and `postgres://` URLs also select the installed Psycopg 3
+driver. Explicit driver selections are preserved.
+
 - `DATABASE_URL` - PostgreSQL SQLAlchemy URL, for example `postgresql+psycopg://USERNAME:PASSWORD@HOST:5432/hackathons`
 - `AI_API_KEY` - API key for the configured OpenAI-compatible provider
 
@@ -133,6 +137,11 @@ uv run --no-sync fastapi run main.py --host 0.0.0.0 --port 8000
 ```
 
 ## Kubernetes deployment note
+
+When MongoDB runs on your computer and Kubernetes runs in Minikube, configure
+`MONGODB_CONNECTION_STRING` in both ETL and scraper secrets with
+`host.minikube.internal:27017`. `localhost` inside a pod refers to that pod,
+not your computer. Restart both deployments after changing their secrets.
 
 The Kubernetes manifests and [skaffold.yaml](../skaffold.yaml) expect the ETL image to be pushed to a registry for non-local clusters. If you deploy to a shared or remote cluster, set a default repo so Skaffold can publish `team2-etl` instead of leaving it available only in the local Docker daemon.
 

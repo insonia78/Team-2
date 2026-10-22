@@ -35,13 +35,17 @@ To enable the AI-backed pagination analyzer, also set:
 Build the image:
 
 ```bash
-docker build -t scrapper:latest .
+docker build -t scraper:latest .
 ```
+
+The build stage compiles the entrypoint together with `models`, `domains`, and
+`shared`. The runtime image contains the compiled output and production
+dependencies only.
 
 Run the container:
 
 ```bash
-docker run --rm -p 3000:3000 --env-file .env scrapper:latest
+docker run --rm -p 3000:3000 --env-file .env scraper:latest
 ```
 
 ## Endpoints

@@ -21,7 +21,7 @@ const getMongoClient = async (): Promise<MongoClient> => {
 
   if (!connectionString) {
     throw new Error(
-      'MongoDB is not configured. Set MONGODB_CONNECTION_STRING in the scrapper .env file.',
+      'MongoDB is not configured. Set MONGODB_CONNECTION_STRING in the scraper .env file.',
     );
   }
 
