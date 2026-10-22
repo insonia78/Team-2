@@ -2,14 +2,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: scrapper
+  name: scraper
   namespace: hackathon-research
 spec:
   type: ClusterIP
   selector:
-    app: scrapper
+    app: scraper
   ports:
     - name: http
       port: 3000
       targetPort: http
-

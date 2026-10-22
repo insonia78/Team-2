@@ -39,7 +39,7 @@ docker compose up --build
 
 ## Skaffold / Kubernetes (ETL + scrapper)
 
-The Kubernetes manifests under [infra/](./infra) reference the `team2-etl` and `team2-scrapper` images. For remote or shared clusters, [skaffold.yaml](./skaffold.yaml) is configured to push images so the cluster can pull the generated tag.
+The Kubernetes manifests under [infra/](./infra) reference the `team2-etl` and `team2-scraper` images. For remote or shared clusters, [skaffold.yaml](./skaffold.yaml) is configured to push images so the cluster can pull the generated tag.
 
 Example:
 

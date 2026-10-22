@@ -2,10 +2,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: scrapper-config
+  name: scraper-config
   namespace: hackathon-research
 data:
   PORT: "3000"
   MONGODB_DATABASE_NAME: hackathon-opportunity-research
   MONGODB_COLLECTION_NAME: hackathons
-

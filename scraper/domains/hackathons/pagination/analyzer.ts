@@ -3,6 +3,7 @@ import { requestJson } from '../../../shared/http';
 import {
   getPrimitiveValue,
   parseNonNegativeInteger,
+  parsePositiveInteger,
   toNullableBoolean,
 } from '../../../shared/parsing';
 import { getPaginationAnalyzerConfig } from './config';
