@@ -31,6 +31,7 @@ export function createTokenSha(input: {
   const hashSource = JSON.stringify({
     iss: input.issuer,
     sub: input.userId,
+    userId: input.userId,
     email: input.email,
     role: input.role,
     jti: input.tokenId,
@@ -66,7 +67,12 @@ export async function signAccessToken(
     expiresAt: expiresAtSeconds,
     revokedAt: null,
   };
-  const token = await new SignJWT({ email: user.email, role: user.role, sha: tokenSha })
+  const token = await new SignJWT({
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+    sha: tokenSha,
+  })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(user.id)
     .setJti(tokenId)
@@ -107,6 +113,7 @@ export async function verifyAccessToken(
   const issuedAt = payload.iat;
   if (
     !payload.sub ||
+    payload.userId !== payload.sub ||
     typeof payload.email !== "string" ||
     !isRole(payload.role) ||
     typeof payload.jti !== "string" ||
